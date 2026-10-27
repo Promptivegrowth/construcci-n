@@ -1,12 +1,14 @@
 // Prueba de exportaciones reales (descarga de archivos) con Chrome.
 import { chromium } from "playwright-core";
+// Empresa con la que se inicia sesión: la de la ruta, o la empresa principal del usuario.
+const companyFor = (p = "", mail = "") => p.match(/^\/empresa\/([^/]+)/)?.[1] ?? (/mparedes|lfernandez/.test(mail) ? "02" : "01");
 const OUT = process.argv[2];
 const browser = await chromium.launch({ channel: "chrome" });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
 await page.addInitScript(() => sessionStorage.setItem("gc-preloaded", "1"));
-await page.goto("http://localhost:3000/login");
+await page.goto(`http://localhost:3000/login?empresa=${companyFor(typeof path === "string" ? path : "", typeof email === "string" ? email : "gerencia@grupocruz.pe")}`);
 await page.fill('input[type="email"]', "gerencia@grupocruz.pe");
 await page.fill('input[type="password"]', "GrupoCruz2026!");
 await page.click('button[type="submit"]');

@@ -66,7 +66,7 @@ export function AppShell(props: Props) {
     setLeaving(true);
     await Promise.all([logoutAction(), new Promise((r) => setTimeout(r, 1200))]);
     try { sessionStorage.removeItem("gc-preloaded"); } catch {}
-    router.replace("/login?salida=1");
+    router.replace(`/login?salida=1&empresa=${props.company.code}`);
     router.refresh();
   };
 

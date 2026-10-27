@@ -1,5 +1,7 @@
 // Capturas para QA visual. Uso: node scripts/shot.mjs <ruta> <salida.png> [email] [ancho] [alto] [full]
 import { chromium } from "playwright-core";
+// Empresa con la que se inicia sesión: la de la ruta, o la empresa principal del usuario.
+const companyFor = (p = "", mail = "") => p.match(/^\/empresa\/([^/]+)/)?.[1] ?? (/mparedes|lfernandez/.test(mail) ? "02" : "01");
 const [, , path, out, email, w = "1440", h = "900", full = "0"] = process.argv;
 const BASE = "http://localhost:3000";
 const browser = await chromium.launch({ channel: "chrome" });
@@ -9,7 +11,7 @@ page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
 page.on("console", (m) => { if (m.type() === "error") console.log("CONSOLE", m.text().slice(0, 300)); });
 await page.addInitScript(() => sessionStorage.setItem("gc-preloaded", "1"));
 if (email) {
-  await page.goto(`${BASE}/login`);
+  await page.goto(`${BASE}/login?empresa=${companyFor(path, email)}`);
   await page.fill('input[type="email"]', email);
   await page.fill('input[type="password"]', "GrupoCruz2026!");
   await page.click('button[type="submit"]');

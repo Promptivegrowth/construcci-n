@@ -1,10 +1,12 @@
 // Detecta elementos que desbordan horizontalmente en móvil. Uso: node scripts/overflow.mjs <ruta> <email>
 import { chromium } from "playwright-core";
+// Empresa con la que se inicia sesión: la de la ruta, o la empresa principal del usuario.
+const companyFor = (p = "", mail = "") => p.match(/^\/empresa\/([^/]+)/)?.[1] ?? (/mparedes|lfernandez/.test(mail) ? "02" : "01");
 const [, , path, email] = process.argv;
 const browser = await chromium.launch({ channel: "chrome" });
 const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
 await page.addInitScript(() => sessionStorage.setItem("gc-preloaded", "1"));
-await page.goto("http://localhost:3000/login");
+await page.goto(`http://localhost:3000/login?empresa=${companyFor(typeof path === "string" ? path : "", typeof email === "string" ? email : "gerencia@grupocruz.pe")}`);
 await page.fill('input[type="email"]', email);
 await page.fill('input[type="password"]', "GrupoCruz2026!");
 await page.click('button[type="submit"]');

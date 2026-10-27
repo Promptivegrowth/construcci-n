@@ -16,6 +16,8 @@ npm run db:seed                 # BORRA y vuelve a sembrar la data de demostraci
 npm run dev                     # http://localhost:3000
 ```
 
+**Ingreso:** primero se elige la empresa del holding y luego se inicia sesión. Si el usuario no pertenece a esa empresa, el servidor rechaza el ingreso; Gerencia General entra a todas. El acceso rápido de desarrollo lista solo los roles con usuario asignado en la empresa elegida.
+
 Usuarios sembrados (contraseña `GrupoCruz2026!`):
 
 | Usuario | Rol | Alcance |
