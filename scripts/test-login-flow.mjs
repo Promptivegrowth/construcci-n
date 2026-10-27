@@ -1,6 +1,6 @@
 // Flujo de ingreso: empresa → usuario. Verifica pasos, roles por empresa y rechazo de empresa ajena.
 import { chromium } from "playwright-core";
-const OUT = process.argv[2];
+const OUT = process.argv[2] ?? (await import("node:os")).tmpdir();
 const browser = await chromium.launch({ channel: "chrome" });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
