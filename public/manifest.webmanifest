@@ -1,0 +1,22 @@
+{
+  "name": "Grupo Cruz · Campo",
+  "short_name": "GC Campo",
+  "description": "Registro de gastos con foto, asistencia con geocerca y almacén desde la obra.",
+  "start_url": "/campo",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#062A4D",
+  "theme_color": "#062A4D",
+  "lang": "es-PE",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Registrar gasto", "url": "/campo?accion=gasto", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Marcar asistencia", "url": "/campo?accion=asistencia", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

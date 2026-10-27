@@ -1,0 +1,4 @@
+{
+  "regions": ["iad1"],
+  "crons": [{ "path": "/api/cron/reporte-quincenal", "schedule": "0 13 1,16 * *" }]
+}
