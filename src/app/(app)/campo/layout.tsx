@@ -22,7 +22,9 @@ export default async function CampoLayout({ children }: { children: React.ReactN
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="min-w-0 flex-1 leading-tight">
-            <CompanyLogo logoKey={s.isHolding ? "holding" : s.memberships[0]?.company.logo_key} dark className="h-8 max-w-[170px]" priority />
+            <span className="inline-flex rounded-xl bg-white px-2.5 py-1">
+              <CompanyLogo logoKey={s.isHolding ? "holding" : s.memberships[0]?.company.logo_key} className="h-8 max-w-[170px]" priority />
+            </span>
             <p className="sr-only">App de campo</p>
           </div>
           <ConnectionPill />

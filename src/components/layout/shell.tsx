@@ -108,9 +108,9 @@ function Sidebar({ user, role, company, companies, projects, sections, project, 
   return (
     <div className="flex h-full flex-col bg-navy-900 text-white">
       <div className="flex items-center justify-between gap-2 px-5 pb-4 pt-5">
-        {/* Logo original de la empresa activa (variante para fondo azul marino) */}
-        <Link href="/empresas" className="min-w-0" aria-label="Empresas del holding">
-          <CompanyLogo logoKey={company?.logo_key} dark className="h-11 max-w-[210px]" priority />
+        {/* Logo original de la empresa activa, sobre fondo blanco como en su versión oficial */}
+        <Link href="/empresas" className="flex min-w-0 flex-1 items-center justify-center rounded-2xl bg-white px-3 py-2.5 shadow-lg shadow-black/20" aria-label="Empresas del holding">
+          <CompanyLogo logoKey={company?.logo_key} className="h-12 w-full" priority />
         </Link>
         <button onClick={onClose} className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 lg:hidden" aria-label="Cerrar menú"><X className="h-5 w-5" /></button>
       </div>
