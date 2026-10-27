@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { BrandMark } from "@/components/brand";
+import { CompanyLogo } from "@/components/brand";
 import { ServiceWorkerRegister } from "@/components/ui/cfg-sw-register";
 import { Avatar } from "@/components/ui/primitives";
 import { getSession } from "@/lib/session";
@@ -21,10 +21,9 @@ export default async function CampoLayout({ children }: { children: React.ReactN
           <Link href={s.isHolding ? "/empresas" : home} className="grid h-9 w-9 place-items-center rounded-xl text-white/70 hover:bg-white/10" aria-label="Volver a la plataforma web">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <span className="rounded-lg bg-white p-0.5"><BrandMark size={28} /></span>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="font-display text-sm font-bold tracking-[0.06em] text-brand-green">GRUPO CRUZ</p>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/55">App de campo</p>
+            <CompanyLogo logoKey={s.isHolding ? "holding" : s.memberships[0]?.company.logo_key} dark className="h-8 max-w-[170px]" priority />
+            <p className="sr-only">App de campo</p>
           </div>
           <ConnectionPill />
           <Avatar name={s.profile.full_name} color={s.profile.avatar_color} size={32} className="ring-white/20" />

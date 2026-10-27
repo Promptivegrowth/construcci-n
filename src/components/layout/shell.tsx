@@ -8,7 +8,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { BrandMark } from "@/components/brand";
+import { CompanyLogo } from "@/components/brand";
 import { Icon } from "@/components/ui/icon";
 import { Avatar, Badge, cn } from "@/components/ui/primitives";
 import { companyNav, filterNav, projectNav, type NavSection } from "@/lib/nav";
@@ -108,12 +108,9 @@ function Sidebar({ user, role, company, companies, projects, sections, project, 
   return (
     <div className="flex h-full flex-col bg-navy-900 text-white">
       <div className="flex items-center justify-between gap-2 px-5 pb-4 pt-5">
-        <Link href="/empresas" className="flex items-center gap-3">
-          <span className="rounded-xl bg-white p-1 shadow"><BrandMark size={34} /></span>
-          <span className="leading-tight">
-            <span className="block font-display text-[15px] font-bold tracking-[0.06em] text-brand-green">GRUPO CRUZ</span>
-            <span className="block text-[11px] text-white/55">Control de presupuestos</span>
-          </span>
+        {/* Logo original de la empresa activa (variante para fondo azul marino) */}
+        <Link href="/empresas" className="min-w-0" aria-label="Empresas del holding">
+          <CompanyLogo logoKey={company?.logo_key} dark className="h-11 max-w-[210px]" priority />
         </Link>
         <button onClick={onClose} className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 lg:hidden" aria-label="Cerrar menú"><X className="h-5 w-5" /></button>
       </div>

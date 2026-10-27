@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { AlertTriangle, Building2, CalendarDays, FolderPlus, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
-import { BudgetBars, DonutChart, SERIES } from "@/components/charts";
+import { BudgetBars, DonutChart } from "@/components/charts";
+import { SERIES } from "@/lib/series";
 import { BatteryBar, Semaphore } from "@/components/ui/battery";
 import { UrlSegment } from "@/components/ui/filters";
 import { CountUp, Stagger, StaggerItem } from "@/components/ui/motion";
