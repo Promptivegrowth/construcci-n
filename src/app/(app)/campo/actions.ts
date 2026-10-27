@@ -67,7 +67,7 @@ export async function submitFieldExpense(input: FieldExpense): Promise<ActionRes
 
     const { data: exp, error } = await sb.from("expenses").insert({
       company_id: ctx.company.id, project_id: ctx.project.id, wbs_id: d.wbsId, phase_id: d.phaseId, supplier_id: supplierId,
-      category: "CAJA CHICA", description: d.description, doc_type: d.docType, series: d.series ? d.series.toUpperCase() : null, doc_number: d.docNumber,
+      category: "CAJA CHICA", description: d.description, doc_type: d.docType, series: d.series ? d.series.toUpperCase() : null, doc_number: d.docNumber || null,
       issue_date: d.issueDate, reception_date: d.issueDate, due_date: d.issueDate, currency: "PEN", exchange_rate: 1,
       tax_condition: d.docType === "FT" ? "gravado" : "no_gravado", total: d.total, origin: "campo", status: "declarado",
       exceeds_budget: exceeds, created_by: ctx.user.id, lat: d.lat ?? null, lng: d.lng ?? null,
@@ -181,7 +181,8 @@ export async function reviewExpense(expenseId: string, decision: "aprobar" | "ob
     if (!e) return { ok: false, error: "Comprobante no encontrado." };
     const { ctx } = await ctxById(e.project_id);
     if (!can(ctx.role, "approveExpense")) return { ok: false, error: "Solo Gerencia aprueba u observa gastos." };
-    if (!["declarado", "observado"].includes(e.status)) return { ok: false, error: "El comprobante ya fue revisado." };
+    // Igual que la bandeja web: solo se revisan gastos declarados; uno observado vuelve a la bandeja cuando la obra lo corrige.
+    if (e.status !== "declarado") return { ok: false, error: "El comprobante ya fue revisado." };
     if (decision === "aprobar") {
       const { count } = await sb.from("expense_files").select("id", { count: "exact", head: true }).eq("expense_id", e.id);
       if (!count) return { ok: false, error: "Sustento obligatorio: el comprobante no tiene foto o PDF." };

@@ -8,7 +8,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { ExportMenu } from "@/components/ui/export-menu";
 import { CountUp, FadeIn, Stagger, StaggerItem } from "@/components/ui/motion";
 import { Badge, Card, CardBody, CardHeader, PageHeader, cn } from "@/components/ui/primitives";
-import { COST_TYPE_LABEL, CONCILIATION_LABEL, EXPENSE_STATUS, ORDER_STATUS, conciliation, fortnightLabel, fortnightOf, ratio } from "@/lib/calc";
+import { COST_TYPE_LABEL, CONCILIATION_LABEL, EXPENSE_STATUS, ORDER_STATUS, conciliation, fortnightLabel, fortnightOf, ratio, CONCILIATION_TONE } from "@/lib/calc";
 import { date, dateShort, DOC_TYPE_LABEL, money, monthLabel, pct } from "@/lib/format";
 import type { ExportSheet } from "@/lib/export/types";
 
@@ -26,7 +26,7 @@ type Props = {
   threshold: number; elapsed?: number;
 };
 
-const STATE_TONE = { conciliado: "green", por_conciliar: "red", revisar: "amber", sin_movimiento: "gray" } as const;
+const STATE_TONE = CONCILIATION_TONE;
 
 export function WbsDetail({ base, meta, node, ancestors, subs, docs, payments, orders, changes, threshold, elapsed }: Props) {
   const [mode, setMode] = useState<"q" | "m">("q");
@@ -82,7 +82,7 @@ export function WbsDetail({ base, meta, node, ancestors, subs, docs, payments, o
               summary: [
                 { label: "Proyectado", value: money(node.budget), tone: "blue" }, { label: "Declarado", value: money(node.declared), tone: "navy" },
                 { label: "Pagado", value: money(node.paid), tone: "green" }, { label: "Saldo", value: money(saldo), tone: saldo < 0 ? "red" : "navy" },
-                { label: "Conciliación", value: CONCILIATION_LABEL[state], tone: "amber" },
+                { label: "Conciliación", value: CONCILIATION_LABEL[state], tone: state === "sin_movimiento" ? undefined : CONCILIATION_TONE[state] },
               ],
               columns: [
                 { key: "date", header: "Fecha", type: "date" }, { key: "docLabel", header: "Comprobante", width: 22 }, { key: "supplier", header: "Proveedor", width: 32 }, { key: "ruc", header: "RUC/DNI", width: 13 },

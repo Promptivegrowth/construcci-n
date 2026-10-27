@@ -73,6 +73,8 @@ export function conciliation(declared: number, paid: number): Conciliation {
 export const CONCILIATION_LABEL: Record<Conciliation, string> = {
   conciliado: "Conciliado", por_conciliar: "Por conciliar", revisar: "Revisar diferencias", sin_movimiento: "Sin movimiento",
 };
+/** Colores únicos en toda la plataforma: lo pendiente de pago es ámbar; lo pagado sin declarar (anomalía) es rojo. */
+export const CONCILIATION_TONE = { conciliado: "green", por_conciliar: "amber", revisar: "red", sin_movimiento: "gray" } as const satisfies Record<Conciliation, Tone>;
 
 type Dated = { start_date: string | null; end_date: string | null; extended_end_date?: string | null };
 export const projectEnd = (p: Dated) => p.extended_end_date ?? p.end_date;
@@ -156,6 +158,9 @@ export const FUND_STATUS: Record<string, { label: string; tone: Tone }> = {
   depositada: { label: "Depositada · por rendir", tone: "amber" },
   rendida: { label: "Rendida", tone: "green" },
 };
+
+/** Valorizaciones que cuentan como ingreso (aprobadas por el cliente). Se usan en el CPI y el avance económico. */
+export const VALUED_STATUS = ["aprobada", "facturada", "cobrada_parcial", "cobrada"];
 
 export const VALUATION_STATUS: Record<string, { label: string; tone: Tone }> = {
   presentada: { label: "Presentada", tone: "violet" },

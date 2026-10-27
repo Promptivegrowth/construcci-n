@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { BatteryBar } from "@/components/ui/battery";
 import { FadeIn } from "@/components/ui/motion";
 import { Badge, ButtonLink, Card, CardBody, CardHeader, cn, PageHeader, Stat } from "@/components/ui/primitives";
-import { CONCILIATION_LABEL, conciliation, EXPENSE_STATUS, LABOR_LABEL } from "@/lib/calc";
+import { CONCILIATION_LABEL, CONCILIATION_TONE, conciliation, EXPENSE_STATUS, LABOR_LABEL } from "@/lib/calc";
 import { date, dateTime, DOC_TYPE_LABEL, docRef, money, pct, toNum } from "@/lib/format";
 import { can, type Role } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
@@ -145,7 +145,7 @@ export default async function GastoDetallePage({ params }: { params: Promise<{ c
           <FadeIn delay={0.1}>
             <Card>
               <CardHeader title="Distribución en el presupuesto" subtitle={(alloc?.length ?? 0) > 1 ? "Comprobante distribuido entre subcategorías (sin duplicar)" : "Costo cargado al WBS"} icon={<Scale className="h-4 w-4" />}
-                actions={conc && <Badge tone={conc === "conciliado" ? "green" : conc === "por_conciliar" ? "amber" : conc === "revisar" ? "red" : "gray"}>{CONCILIATION_LABEL[conc]}</Badge>} />
+                actions={conc && <Badge tone={CONCILIATION_TONE[conc]}>{CONCILIATION_LABEL[conc]}</Badge>} />
               <CardBody className="space-y-4">
                 {(alloc ?? []).map((a) => {
                   const w = a.wbs as unknown as { id: string; code: string; name: string };

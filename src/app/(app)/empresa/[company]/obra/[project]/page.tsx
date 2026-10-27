@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { COST_TYPE_LABEL, buildTree, conciliation, elapsed, flatten, fortnightOf, fortnightLabel, monthsBetween, projectEnd, ratio, sCurve, totals } from "@/lib/calc";
+import { COST_TYPE_LABEL, buildTree, conciliation, elapsed, flatten, fortnightOf, fortnightLabel, monthsBetween, projectEnd, ratio, sCurve, totals, VALUED_STATUS } from "@/lib/calc";
 import { monthLabel, todayISO, toNum } from "@/lib/format";
 import { getDeclaredSeries, getPaymentsSeries, getPhases, getWbsStats } from "@/lib/queries";
 import { getProjectContext } from "@/lib/session";
@@ -64,7 +64,7 @@ export default async function ProjectSummaryPage({ params }: { params: Promise<{
     const ls = leaves.filter((l) => l.phase_id === ph.id);
     const budget = ls.reduce((s, l) => s + l.budget, 0);
     const paid = pays.filter((x) => x.phase_id === ph.id).reduce((s, x) => s + x.cost, 0);
-    const valued = (vals ?? []).filter((v) => v.phase_id === ph.id).reduce((s, v) => s + toNum(v.approved_amount ?? v.presented_amount), 0);
+    const valued = (vals ?? []).filter((v) => v.phase_id === ph.id && VALUED_STATUS.includes(v.status)).reduce((s, v) => s + toNum(v.approved_amount), 0);
     return { id: ph.id, code: ph.code, name: ph.name, color: ph.color, budget, paid, sale: ph.sale_amount, valued, cpi: paid > 0 ? valued / paid : null };
   });
   const unphased = leaves.filter((l) => !l.phase_id);
@@ -83,7 +83,7 @@ export default async function ProjectSummaryPage({ params }: { params: Promise<{
   const critical = leaves.filter((l) => l.budget > 0).map((l) => ({ id: l.wbs_id, code: l.code, name: l.name, budget: l.budget, paid: l.paid, r: ratio(l.paid, l.budget) }))
     .sort((a, b) => b.r - a.r).slice(0, 6);
 
-  const valued = (vals ?? []).reduce((s, v) => s + toNum(v.approved_amount ?? v.presented_amount), 0);
+  const valued = (vals ?? []).filter((v) => VALUED_STATUS.includes(v.status)).reduce((s, v) => s + toNum(v.approved_amount), 0);
   const collected = (colls ?? []).reduce((s, c) => s + toNum(c.amount), 0);
 
   const data: ExecutiveData = {

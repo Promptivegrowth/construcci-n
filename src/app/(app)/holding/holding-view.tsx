@@ -103,7 +103,7 @@ export function HoldingView({ rows, companies, user, alertsByCompany }: { rows: 
           <CardBody className="space-y-3">
             {inAlert.map((r) => (
               <Link key={r.id} href={`/empresa/${r.company}/obra/${r.code}`} className="flex items-center gap-3 rounded-xl border border-line-soft p-3 transition hover:bg-slate-50">
-                <Semaphore level={consumptionLevel(ratio(r.paid, r.budget), r.threshold)} />
+                <Semaphore level={consumptionLevel(ratio(r.paid, r.budget), r.threshold)} threshold={r.threshold} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-semibold">{r.code} · {r.name}</p>
                   <p className="text-[11px] text-ink-muted">{r.companyName} · consumo {pct(ratio(r.paid, r.budget))} · plazo {pct(r.elapsed, 0)}</p>

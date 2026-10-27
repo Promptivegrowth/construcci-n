@@ -39,13 +39,19 @@ export async function GET(req: Request) {
   for (const p of projects ?? []) {
     const [{ data: stats }, { data: pays }] = await Promise.all([
       sb.from("v_wbs_stats").select("*").eq("project_id", p.id).eq("is_leaf", true),
-      sb.from("payments").select("amount_pen").eq("project_id", p.id).eq("voided", false).gte("paid_at", range.from).lte("paid_at", range.to),
+      sb.from("payments").select("amount_pen, expense:expenses(cost_pen, payable_pen)").eq("project_id", p.id).eq("voided", false).gte("paid_at", range.from).lte("paid_at", range.to),
     ]);
     const t = totals(normalizeStats((stats ?? []) as Record<string, unknown>[]));
     const a = (alerts ?? []).filter((x) => x.project_id === p.id);
     reports.push({
       company: (companies ?? []).find((c) => c.id === p.company_id), code: p.code, name: p.name, budget: t.budget, paid: t.paid, committed: t.committed,
-      paidFortnight: (pays ?? []).reduce((s, x) => s + toNum(x.amount_pen), 0), consumption: t.budget ? t.paid / t.budget : 0,
+      // Igual que el acumulado (v_wbs_stats): el pago se expresa como costo sin IGV, proporcional a lo pagado del comprobante.
+      paidFortnight: (pays ?? []).reduce((s, x) => {
+        const e = x.expense as unknown as { cost_pen: number; payable_pen: number } | null;
+        const payable = toNum(e?.payable_pen);
+        return s + (payable > 0 ? toNum(x.amount_pen) * toNum(e?.cost_pen) / payable : 0);
+      }, 0),
+      consumption: t.budget ? t.paid / t.budget : 0, threshold: (p.alert_threshold ?? 80) / 100,
       critical: a.filter((x) => x.severity === "danger").map((x) => x.title).slice(0, 5), warnings: a.filter((x) => x.severity === "warning").length,
     });
   }
@@ -55,7 +61,7 @@ export async function GET(req: Request) {
     <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right">${money(r.budget)}</td>
     <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right">${money(r.paidFortnight)}</td>
     <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right">${money(r.paid)}</td>
-    <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;color:${r.consumption >= 1 ? "#c8102e" : r.consumption >= 0.8 ? "#d97706" : "#035928"};font-weight:700">${pct(r.consumption)}</td></tr>
+    <td style="padding:8px;border-bottom:1px solid #e2e8f0;text-align:right;color:${r.consumption >= 1 ? "#c8102e" : r.consumption >= r.threshold ? "#d97706" : "#035928"};font-weight:700">${pct(r.consumption)}</td></tr>
     ${r.critical.length ? `<tr><td colspan="5" style="padding:4px 8px 10px;font-size:12px;color:#c8102e">⚠ ${r.critical.join(" · ")}</td></tr>` : ""}`).join("");
   const html = `<div style="font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#0f1b2d">
     <div style="background:#062a4d;color:#fff;padding:20px 24px;border-bottom:4px solid #04bf55">
@@ -63,7 +69,7 @@ export async function GET(req: Request) {
       <div style="font-size:16px;margin-top:6px">Reporte quincenal de control presupuestal</div>
       <div style="font-size:12px;opacity:.7">Periodo ${range.from} al ${range.to}</div></div>
     <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
-      <tr style="background:#f3f6fa;font-size:11px;text-transform:uppercase;color:#66758a"><th style="padding:8px;text-align:left">Obra</th><th style="padding:8px;text-align:right">Presupuesto</th><th style="padding:8px;text-align:right">Pagado en la quincena</th><th style="padding:8px;text-align:right">Pagado acumulado</th><th style="padding:8px;text-align:right">Consumo</th></tr>
+      <tr style="background:#f3f6fa;font-size:11px;text-transform:uppercase;color:#66758a"><th style="padding:8px;text-align:left">Obra</th><th style="padding:8px;text-align:right">Presupuesto</th><th style="padding:8px;text-align:right">Pagado en la quincena (sin IGV)</th><th style="padding:8px;text-align:right">Pagado acumulado (sin IGV)</th><th style="padding:8px;text-align:right">Consumo</th></tr>
       ${rows}</table>
     <p style="font-size:11px;color:#66758a;margin-top:18px">Documento interno y privado. Ingrese a la plataforma para el detalle por WBS y los comprobantes.</p></div>`;
 

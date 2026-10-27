@@ -9,7 +9,7 @@ import { Drawer } from "@/components/ui/dialog";
 import { ExportMenu } from "@/components/ui/export-menu";
 import { CountUp } from "@/components/ui/motion";
 import { Badge, Card, cn } from "@/components/ui/primitives";
-import { CONCILIATION_LABEL, EXPENSE_STATUS, type Conciliation, type Tone } from "@/lib/calc";
+import { CONCILIATION_LABEL, EXPENSE_STATUS, type Conciliation, type Tone, CONCILIATION_TONE } from "@/lib/calc";
 import { DOC_TYPE_LABEL, date, docRef, money, pct } from "@/lib/format";
 import type { ExportSheet } from "@/lib/export/types";
 import { differenceDetailAction, type DiffDoc } from "../actions";
@@ -17,7 +17,7 @@ import { differenceDetailAction, type DiffDoc } from "../actions";
 export type LeafCard = { id: string; code: string; name: string; path: string; budget: number; declared: number; paid: number; docs: number; pending: number; state: Conciliation };
 export type CatCard = { id: string; code: string; name: string; budget: number; declared: number; paid: number; state: Conciliation; leaves: LeafCard[] };
 
-const STATE_TONE: Record<Conciliation, Tone> = { conciliado: "green", por_conciliar: "amber", revisar: "red", sin_movimiento: "gray" };
+const STATE_TONE = CONCILIATION_TONE;
 const RANK: Record<Conciliation, number> = { revisar: 3, por_conciliar: 2, conciliado: 1, sin_movimiento: 0 };
 
 function diffText(declared: number, paid: number) {

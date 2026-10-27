@@ -12,9 +12,14 @@ const FILL: Record<Level, string> = {
 };
 export const LEVEL_META: Record<Level, { label: string; text: string; bg: string; Icon: typeof CircleCheck }> = {
   normal: { label: "Consumo normal", text: "text-brand-green-700", bg: "bg-ok-50", Icon: CircleCheck },
-  alerta: { label: "Alerta ≥ 80%", text: "text-[#9a5200]", bg: "bg-warn-50", Icon: AlertTriangle },
+  alerta: { label: "Alerta", text: "text-[#9a5200]", bg: "bg-warn-50", Icon: AlertTriangle },
   peligro: { label: "Sobrecosto", text: "text-danger", bg: "bg-danger-50", Icon: OctagonAlert },
 };
+
+/** Etiqueta del nivel con el umbral real de la obra (ej. "Alerta ≥ 75%"). */
+export function levelLabel(level: Level, threshold = 0.8) {
+  return level === "alerta" ? `Alerta ≥ ${Math.round(threshold * 100)}%` : LEVEL_META[level].label;
+}
 
 /**
  * Barra de consumo que "carga como batería": azul→verde hasta 79%, ámbar desde el umbral
@@ -31,6 +36,7 @@ export function BatteryBar({
   const width = Math.min(r, 1) * 100;
   const h = size === "sm" ? "h-2" : size === "lg" ? "h-5" : "h-3";
   const meta = LEVEL_META[level];
+  const levelText = levelLabel(level, threshold);
   return (
     <div className={cn("w-full", className)}>
       {showLabel && (
@@ -44,7 +50,7 @@ export function BatteryBar({
       )}
       <div
         className={cn("relative w-full overflow-hidden rounded-full bg-slate-100 ring-1 ring-inset ring-slate-200/70", h)}
-        role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(r * 100)} aria-label={`${meta.label}: ${pct(r)}`}
+        role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(r * 100)} aria-label={`${levelText}: ${pct(r)}`}
       >
         <motion.div
           className={cn("absolute inset-y-0 left-0 rounded-full", level === "peligro" && "animate-pulse")}
@@ -72,16 +78,16 @@ export function BatteryBar({
 }
 
 /** Semáforo de tres luces para el estado de consumo. */
-export function Semaphore({ level, className }: { level: Level; className?: string }) {
+export function Semaphore({ level, threshold, className }: { level: Level; threshold?: number; className?: string }) {
   const on = { normal: 2, alerta: 1, peligro: 0 }[level];
   const colors = ["#f21d2f", "#f59e0b", "#0a9f4c"];
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full bg-navy-900 px-1.5 py-1", className)} title={LEVEL_META[level].label}>
+    <span className={cn("inline-flex items-center gap-1 rounded-full bg-navy-900 px-1.5 py-1", className)} title={levelLabel(level, threshold)}>
       {colors.map((c, i) => (
         <span key={c} className={cn("h-2.5 w-2.5 rounded-full transition", i === on ? "scale-110" : "opacity-20")}
           style={{ background: c, boxShadow: i === on ? `0 0 8px ${c}` : undefined }} />
       ))}
-      <span className="sr-only">{LEVEL_META[level].label}</span>
+      <span className="sr-only">{levelLabel(level, threshold)}</span>
     </span>
   );
 }
@@ -91,7 +97,7 @@ export function LevelBadge({ ratio, threshold = 0.8 }: { ratio: number; threshol
   const m = LEVEL_META[level];
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", m.bg, m.text)}>
-      <m.Icon className="h-3 w-3" /> {m.label}
+      <m.Icon className="h-3 w-3" /> {levelLabel(level, threshold)}
     </span>
   );
 }

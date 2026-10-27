@@ -21,7 +21,7 @@ export type AlertRow = {
 };
 
 export const ALERT_TYPES: Record<string, { label: string; Icon: LucideIcon }> = {
-  consumo_80: { label: "Consumo ≥ 80%", Icon: BatteryWarning },
+  consumo_80: { label: "Consumo sobre el umbral", Icon: BatteryWarning },
   sobrecosto: { label: "Sobrecosto", Icon: OctagonAlert },
   ritmo: { label: "Ritmo de gasto", Icon: Gauge },
   diferencia: { label: "Diferencias Obra vs. Contabilidad", Icon: Scale },
@@ -29,7 +29,7 @@ export const ALERT_TYPES: Record<string, { label: string; Icon: LucideIcon }> = 
   vencimiento: { label: "Comprobante por vencer", Icon: CalendarClock },
   orden_excedida: { label: "Orden excedida", Icon: ClipboardX },
   stock: { label: "Stock crítico", Icon: PackageX },
-  fondos: { label: "Fondos", Icon: Info },
+  fondos: { label: "Fondos por rendir", Icon: Info },
 };
 
 const SEV: Record<string, { label: string; tone: "red" | "amber" | "blue"; ring: string; dot: string; Icon: LucideIcon }> = {
@@ -47,6 +47,7 @@ function entityHref(companyCode: string, a: AlertRow) {
     case "material": return a.entity_id ? `/empresa/${companyCode}/materiales?material=${a.entity_id}` : `${obra}/almacen`;
     case "stock": return `${obra}/almacen`;
     case "order": return a.entity_id ? `${obra}/ordenes/${a.entity_id}` : `${obra}/ordenes`;
+    case "fund": return `${obra}/caja`;
     default: return obra;
   }
 }

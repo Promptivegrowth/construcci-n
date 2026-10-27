@@ -712,8 +712,11 @@ async function main() {
     const statuses = p.closed ? ["rendida", "rendida", "rendida", "rendida"] : ["rendida", "rendida", "rendida", "rendida", "rendida", "depositada", "depositada", "aprobada", "pendiente", "pendiente", "rechazada"];
     let date = addDays(maxD(p.start, addDays(TODAY, -150)), 3);
     const step = Math.max(6, Math.floor((d2n(p.closed ? p.cancelledAt : TODAY) - d2n(date)) / statuses.length));
-    let ci = 0;
+    let ci = 0, pendingRender = 0;
     statuses.forEach((st, i) => {
+      // Fondos aún por rendir: uno reciente y otro de ~3 semanas (genera la alerta de fondos por rendir)
+      const date0 = date;
+      if (st === "depositada") date = addDays(TODAY, pendingRender++ === 0 ? -22 : -6);
       const amount = r2(int(15, 80) * 100);
       const requester = pick([p.adminUser, p.residentUser].filter(Boolean));
       const req = { id: randomUUID(), company_id: p.company_id, project_id: p.id, box_id: box.id, seq: i + 1, requested_by: requester, amount, reason: pick(REASONS),
@@ -741,7 +744,7 @@ async function main() {
         }
       }
       requests.push(req);
-      date = minD(addDays(date, step), TODAY);
+      date = minD(addDays(st === "depositada" ? date0 : date, step), TODAY);
     });
   }
   await insert("cash_boxes", boxes);

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { FileCheck2, HandCoins, Landmark, PieChart, Receipt } from "lucide-react";
 import { KpiCard } from "@/components/ui/cont-kit";
 import { PageHeader } from "@/components/ui/primitives";
+import { VALUED_STATUS } from "@/lib/calc";
 import { pct, toNum } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { getPaymentsSeries, getPhases } from "@/lib/queries";
@@ -11,7 +12,7 @@ import { ValuationsView, type PhaseRow, type ValRow } from "./_components/valuat
 
 export const metadata: Metadata = { title: "Valorizaciones y cobros" };
 
-const VALUED = ["aprobada", "facturada", "cobrada_parcial", "cobrada"];
+const VALUED = VALUED_STATUS;
 const INVOICED = ["facturada", "cobrada_parcial", "cobrada"];
 
 export default async function ValorizacionesPage({ params }: { params: Promise<{ company: string; project: string }> }) {

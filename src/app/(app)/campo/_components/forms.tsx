@@ -53,7 +53,7 @@ export function ExpenseForm({ data, project, onDone }: { data: CampoData; projec
     e.preventDefault();
     const err = !photo ? "Toma la foto del comprobante (sustento obligatorio)." : !phaseId ? "Selecciona la fase." : !wbsId ? "Selecciona el WBS." :
       !/^(\d{8}|\d{11})$/.test(ruc) ? "RUC (11) o DNI (8) inválido." : !known && name.trim().length < 3 ? "Ingresa la razón social del proveedor." :
-      !num.trim() ? "Ingresa el número del comprobante." : amount <= 0 ? "Ingresa el monto." : desc.trim().length < 4 ? "Describe el gasto." : null;
+      !num.trim() && !["TK", "OT"].includes(docType) ? "Ingresa el número del comprobante." : amount <= 0 ? "Ingresa el monto." : desc.trim().length < 4 ? "Describe el gasto." : null;
     if (err) return toast.warning(err);
     setSaving(true);
     await enqueue({
@@ -80,7 +80,7 @@ export function ExpenseForm({ data, project, onDone }: { data: CampoData; projec
           </div>
           <div className="grid grid-cols-3 gap-3">
             <Field label="Serie"><Input value={series} onChange={(e) => setSeries(e.target.value.toUpperCase())} placeholder="B001" maxLength={6} /></Field>
-            <Field label="Número" required className="col-span-2"><Input inputMode="numeric" value={num} onChange={(e) => setNum(e.target.value)} placeholder="000123" /></Field>
+            <Field label="Número" required={!["TK", "OT"].includes(docType)} className="col-span-2"><Input inputMode="numeric" value={num} onChange={(e) => setNum(e.target.value)} placeholder="000123" /></Field>
           </div>
           <Field label="RUC / DNI del proveedor" required hint={known ? `✓ ${known.name}` : ruc.length >= 8 ? "Proveedor nuevo: se registrará en la empresa" : undefined}>
             <Input list="campo-suppliers" inputMode="numeric" value={ruc} onChange={(e) => setRuc(e.target.value.replace(/\D/g, "").slice(0, 11))} placeholder="20xxxxxxxxx" />

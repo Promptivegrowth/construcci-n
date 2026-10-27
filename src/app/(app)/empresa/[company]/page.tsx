@@ -41,7 +41,7 @@ export default async function CompanyPage({ params, searchParams }: { params: Pr
     contract: s.contract + Number(r.p.contract_amount), budget: s.budget + r.t.budget, paid: s.paid + r.t.paid,
     committed: s.committed + r.t.committed, declared: s.declared + r.t.declared,
   }), { contract: 0, budget: 0, paid: 0, committed: 0, declared: 0 });
-  const inAlert = rows.filter((r) => consumptionLevel(ratio(r.t.paid, r.t.budget)) !== "normal" || r.danger > 0).length;
+  const inAlert = rows.filter((r) => consumptionLevel(ratio(r.t.paid, r.t.budget), r.p.alert_threshold / 100) !== "normal" || r.danger > 0).length;
 
   const kpis = [
     { label: "Monto contratado", value: tot.contract, sub: `${all.length} obras · sin IGV`, tone: "text-navy-900" },
@@ -125,7 +125,7 @@ export default async function CompanyPage({ params, searchParams }: { params: Pr
                           <h3 className="mt-2.5 line-clamp-2 font-display text-[15px] font-semibold leading-snug text-ink group-hover:text-brand-blue">{p.name}</h3>
                           <p className="mt-1 flex items-center gap-1 text-xs text-ink-muted"><MapPin className="h-3 w-3" />{p.location}, {p.region} · {p.client_name}</p>
                         </div>
-                        <Semaphore level={level} />
+                        <Semaphore level={level} threshold={p.alert_threshold / 100} />
                       </div>
                       <div className="mt-4 grid grid-cols-3 gap-3">
                         <div><p className="text-[11px] text-ink-muted">Presupuesto</p><p className="num text-sm font-semibold">{moneyShort(t.budget)}</p></div>

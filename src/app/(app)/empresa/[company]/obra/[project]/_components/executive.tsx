@@ -7,7 +7,7 @@ import { BatteryBar, LevelBadge, Semaphore } from "@/components/ui/battery";
 import { ExportMenu } from "@/components/ui/export-menu";
 import { CountUp, FadeIn, Stagger, StaggerItem } from "@/components/ui/motion";
 import { Badge, ButtonLink, Card, CardBody, CardHeader, PageHeader, cn } from "@/components/ui/primitives";
-import { CONCILIATION_LABEL, PROJECT_STATUS, consumptionLevel, ratio, type Conciliation, type Totals } from "@/lib/calc";
+import { CONCILIATION_LABEL, PROJECT_STATUS, consumptionLevel, ratio, type Conciliation, type Totals, CONCILIATION_TONE } from "@/lib/calc";
 import { date, money, moneyShort, pct, timeAgo } from "@/lib/format";
 import { can, type Role } from "@/lib/permissions";
 import type { ExportSheet } from "@/lib/export/types";
@@ -27,7 +27,7 @@ export type ExecutiveData = {
   alerts: { id: string; title: string; message: string | null; severity: string; alert_type: string; entity_id: string | null; created_at: string }[];
 };
 
-const STATE_TONE: Record<Conciliation, "green" | "red" | "amber" | "gray"> = { conciliado: "green", por_conciliar: "red", revisar: "amber", sin_movimiento: "gray" };
+const STATE_TONE = CONCILIATION_TONE;
 const TYPE_COLORS = [SERIES.proyectado, SERIES.pagado, SERIES.declarado, SERIES.comprometido, SERIES.extra, "#475569", "#0F4675", "#94A3B8"];
 
 export function Executive({ data }: { data: ExecutiveData }) {
@@ -212,7 +212,7 @@ export function Executive({ data }: { data: ExecutiveData }) {
               <Link key={c.id} href={`${base}/presupuesto/${c.id}`} className="block rounded-xl p-2 transition hover:bg-slate-50">
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <p className="truncate text-[13px] font-semibold text-ink"><span className="text-ink-muted">{c.code}</span> · {c.name}</p>
-                  <Semaphore level={consumptionLevel(c.r, p.threshold)} />
+                  <Semaphore level={consumptionLevel(c.r, p.threshold)} threshold={p.threshold} />
                 </div>
                 <BatteryBar value={c.paid} total={c.budget} threshold={p.threshold} elapsed={p.status === "ejecucion" ? data.elapsed : undefined} delay={i * 0.08} />
               </Link>
@@ -288,7 +288,7 @@ export function Executive({ data }: { data: ExecutiveData }) {
             actions={<Link href={`/empresa/${data.companyCode}/alertas`} className="text-xs font-semibold text-brand-blue hover:underline">Ver todas</Link>} />
           <CardBody className="space-y-2">
             {data.alerts.map((a) => (
-              <Link key={a.id} href={a.alert_type.match(/consumo|sobrecosto|ritmo|diferencia/) && a.entity_id ? `${base}/presupuesto/${a.entity_id}` : a.alert_type === "vencimiento" && a.entity_id ? `${base}/gastos/${a.entity_id}` : `/empresa/${data.companyCode}/alertas`}
+              <Link key={a.id} href={a.alert_type.match(/consumo|sobrecosto|ritmo|diferencia/) && a.entity_id ? `${base}/presupuesto/${a.entity_id}` : a.alert_type === "vencimiento" && a.entity_id ? `${base}/gastos/${a.entity_id}` : a.alert_type === "orden_excedida" && a.entity_id ? `${base}/ordenes/${a.entity_id}` : a.alert_type === "fondos" ? `${base}/caja` : `/empresa/${data.companyCode}/alertas`}
                 className="flex gap-3 rounded-xl border border-line-soft p-3 transition hover:bg-slate-50">
                 {a.severity === "danger" ? <OctagonAlert className="h-5 w-5 shrink-0 text-danger-500" /> : a.severity === "warning" ? <AlertTriangle className="h-5 w-5 shrink-0 text-warn-500" /> : <Info className="h-5 w-5 shrink-0 text-brand-blue" />}
                 <div className="min-w-0">

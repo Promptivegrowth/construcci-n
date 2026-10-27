@@ -21,12 +21,13 @@ export function projectNav(base: string): NavSection[] {
     },
     {
       title: "Administración",
-      roles: ADMIN,
+      roles: [...ADMIN, "almacen"],
       items: [
-        { href: `${base}/gastos`, label: "Gastos y comprobantes", icon: "Receipt" },
+        { href: `${base}/gastos`, label: "Gastos y comprobantes", icon: "Receipt", roles: ADMIN },
         { href: `${base}/aprobaciones`, label: "Aprobaciones", icon: "ShieldCheck", roles: ["gerente_general", "gerente_proyectos"] },
+        // Almacén solicita órdenes de compra de materiales (PERMS.requestOrder)
         { href: `${base}/ordenes`, label: "Órdenes O/S y O/C", icon: "ClipboardList" },
-        { href: `${base}/caja`, label: "Caja y fondos", icon: "Wallet" },
+        { href: `${base}/caja`, label: "Caja y fondos", icon: "Wallet", roles: ADMIN },
       ],
     },
     {

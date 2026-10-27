@@ -6,11 +6,11 @@ import { useMemo, useState } from "react";
 import { BatteryBar, Semaphore } from "@/components/ui/battery";
 import { ExportMenu } from "@/components/ui/export-menu";
 import { Badge, Button, Card, cn } from "@/components/ui/primitives";
-import { COST_TYPE_LABEL, CONCILIATION_LABEL, conciliation, consumptionLevel, flatten, ratio, type WbsNode } from "@/lib/calc";
+import { COST_TYPE_LABEL, CONCILIATION_LABEL, conciliation, consumptionLevel, flatten, ratio, type WbsNode, CONCILIATION_TONE } from "@/lib/calc";
 import { money, pct } from "@/lib/format";
 import { ChangeDialog } from "./change-dialog";
 
-const STATE_TONE = { conciliado: "green", por_conciliar: "red", revisar: "amber", sin_movimiento: "gray" } as const;
+const STATE_TONE = CONCILIATION_TONE;
 
 export function WbsTree({ tree, base, threshold, elapsed, phases, canEdit, meta }: {
   tree: WbsNode[]; base: string; threshold: number; elapsed?: number; phases: { id: string; code: string }[]; canEdit: boolean;
@@ -72,7 +72,7 @@ export function WbsTree({ tree, base, threshold, elapsed, phases, canEdit, meta 
           <div className="col-span-2 lg:col-span-1"><BatteryBar value={n.paid} total={n.budget} threshold={threshold} elapsed={elapsed} size="sm" label={`${pct(r)}${n.committed ? ` · comp. ${money(n.committed)}` : ""}`} showLabel /></div>
           <div className="col-start-2 row-start-1 flex items-center justify-end gap-1.5 lg:col-start-auto lg:row-start-auto">
             <Badge tone={STATE_TONE[state]} className="hidden xl:inline-flex">{CONCILIATION_LABEL[state]}</Badge>
-            <Semaphore level={consumptionLevel(r, threshold)} />
+            <Semaphore level={consumptionLevel(r, threshold)} threshold={threshold} />
             {canEdit && leaf && (
               <button onClick={() => setEdit(n)} className="grid h-8 w-8 place-items-center rounded-lg text-ink-muted opacity-60 transition hover:bg-white hover:text-brand-blue group-hover:opacity-100" title="Adicional / deductivo">
                 <PencilLine className="h-4 w-4" />
