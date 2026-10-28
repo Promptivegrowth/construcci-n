@@ -7,12 +7,13 @@ import { FadeIn } from "@/components/ui/motion";
 import { Badge, ButtonLink, Card, CardBody, CardHeader, cn, PageHeader, Stat } from "@/components/ui/primitives";
 import { CONCILIATION_LABEL, CONCILIATION_TONE, conciliation, EXPENSE_STATUS, LABOR_LABEL } from "@/lib/calc";
 import { date, dateTime, DOC_TYPE_LABEL, docRef, money, pct, toNum } from "@/lib/format";
-import { can, type Role } from "@/lib/permissions";
+import { can, type Role, canView } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { signedUrls } from "@/lib/storage";
 import { supabaseServer } from "@/lib/supabase/server";
 import { EvidenceViewer } from "./evidence-viewer";
 import { ExpenseActions } from "./expense-actions";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Detalle del comprobante" };
 
@@ -21,6 +22,7 @@ type Event = { at: string; title: string; detail?: string; who?: string | null; 
 export default async function GastoDetallePage({ params }: { params: Promise<{ company: string; project: string; id: string }> }) {
   const { company, project, id } = await params;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "finance")) return <NoAccess role={ctx.role} area="finance" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const base = `/empresa/${company}/obra/${project}`;
 

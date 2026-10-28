@@ -750,6 +750,17 @@ async function main() {
   await insert("cash_boxes", boxes);
   await insert("fund_requests", requests);
   await insert("cash_movements", movements);
+  // Comprobantes rendidos con caja: su pago es la propia caja, no una transferencia de Contabilidad (evita el doble pago)
+  const rendered = movements.filter((m) => m.expense_id);
+  for (let i = 0; i < rendered.length; i += 200) {
+    const { error } = await sb.from("payments").update({ method: "caja", bank: null, operation_number: null, notes: "Pagado con caja de obra (rendición)" })
+      .in("expense_id", rendered.slice(i, i + 200).map((m) => m.expense_id));
+    if (error) throw error;
+  }
+  for (const m of rendered) {
+    const { error } = await sb.rpc("settle_cash_expense", { p_expense: m.expense_id, p_date: m.moved_at, p_note: "Pagado con caja de obra (rendición)" });
+    if (error) throw error;
+  }
 
   log("Valorizaciones y cobros…");
   const valRows = [], collRows = [];

@@ -7,6 +7,8 @@ import { pct, toNum, todayISO } from "@/lib/format";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ResultsView, type IgvMonth, type MonthResult } from "./_components/results-view";
+import { canView } from "@/lib/permissions";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Estado de resultados" };
 
@@ -19,6 +21,7 @@ export default async function ResultadosPage({ params, searchParams }: { params:
   const { company, project } = await params;
   const sp = await searchParams;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "accounting")) return <NoAccess role={ctx.role} area="accounting" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const pid = ctx.project.id;
 

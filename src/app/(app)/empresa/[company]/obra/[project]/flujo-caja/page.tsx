@@ -7,6 +7,8 @@ import { monthLabel, toNum, todayISO } from "@/lib/format";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CashFlowView, type FlowPeriod, type ValuationBlock } from "./_components/cashflow-view";
+import { canView } from "@/lib/permissions";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Flujo de caja" };
 
@@ -22,6 +24,7 @@ export default async function FlujoCajaPage({ params, searchParams }: { params: 
   const { company, project } = await params;
   const vista = (await searchParams).vista === "semana" ? "semana" : "mes";
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "accounting")) return <NoAccess role={ctx.role} area="accounting" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const pid = ctx.project.id;
 

@@ -6,12 +6,15 @@ import { getPhases, getWbsStats } from "@/lib/queries";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { WbsDetail } from "./wbs-detail";
+import { canView } from "@/lib/permissions";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Detalle de WBS" };
 
 export default async function WbsPage({ params }: { params: Promise<{ company: string; project: string; wbs: string }> }) {
   const { company, project, wbs } = await params;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "finance")) return <NoAccess role={ctx.role} area="finance" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const p = ctx.project;
   const [stats, phases] = await Promise.all([getWbsStats(p.id), getPhases(p.id)]);
   const all = flatten(buildTree(stats));

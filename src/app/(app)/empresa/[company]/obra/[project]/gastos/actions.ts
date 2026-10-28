@@ -60,6 +60,7 @@ export async function saveExpense(companyCode: string, projectCode: string, inpu
   try {
     const ctx = await getProjectContext(companyCode, projectCode);
     if (!can(ctx.role, "registerExpense")) return { ok: false, error: "Tu rol no puede registrar gastos." };
+    if (ctx.project.status === "cerrada") return { ok: false, error: "La obra está cerrada (solo lectura)." };
     const sb = await supabaseServer();
     const pid = ctx.project.id;
 
@@ -162,8 +163,11 @@ export async function saveExpense(companyCode: string, projectCode: string, inpu
 
     let id = expenseId;
     if (expenseId) {
-      const { error } = await sb.from("expenses").update({ ...row, declared_at: mode === "declarado" ? new Date().toISOString() : null }).eq("id", expenseId);
+      // Solo si sigue corrigiéndose: si Gerencia lo aprobó mientras se editaba, no se revierte
+      const { data: upd, error } = await sb.from("expenses").update({ ...row, declared_at: mode === "declarado" ? new Date().toISOString() : null })
+        .eq("id", expenseId).in("status", ["borrador", "observado", "declarado"]).select("id");
       if (error) throw error;
+      if (!upd?.length) return { ok: false, error: "El comprobante cambió de estado mientras lo editabas (p. ej. ya fue aprobado). Recarga la página." };
     } else {
       const { data, error } = await sb.from("expenses").insert({
         ...row, company_id: ctx.company.id, project_id: pid, created_by: ctx.user.id,
@@ -173,10 +177,15 @@ export async function saveExpense(companyCode: string, projectCode: string, inpu
       id = data.id;
     }
 
-    // Asignaciones: se reescriben para reflejar la distribución vigente
-    await sb.from("expense_allocations").delete().eq("expense_id", id!);
-    const { error: aErr } = await sb.from("expense_allocations").insert(allocations.map((a) => ({ expense_id: id!, wbs_id: a.wbs_id, amount_pen: a.amount })));
-    if (aErr) throw aErr;
+    // Asignaciones: se reescriben solo si la distribución cambió (un cambio de texto no toca las cifras del WBS)
+    const key = (l: { wbs_id: string; amount: number }[]) => l.map((a) => `${a.wbs_id}:${r2(a.amount).toFixed(2)}`).sort().join("|");
+    const { data: ownNow } = await sb.from("expense_allocations").select("wbs_id, amount_pen").eq("expense_id", id!);
+    if (key((ownNow ?? []).map((a) => ({ wbs_id: a.wbs_id, amount: Number(a.amount_pen) }))) !== key(allocations)) {
+      const { error: dErr } = await sb.from("expense_allocations").delete().eq("expense_id", id!);
+      if (dErr) throw dErr;
+      const { error: aErr } = await sb.from("expense_allocations").insert(allocations.map((a) => ({ expense_id: id!, wbs_id: a.wbs_id, amount_pen: a.amount })));
+      if (aErr) throw aErr;
+    }
 
     if (input.files.length) {
       const { error: fErr } = await sb.from("expense_files").insert(input.files.map((f) => ({
@@ -198,6 +207,7 @@ export async function saveExpense(companyCode: string, projectCode: string, inpu
 export async function approveExpenses(companyCode: string, projectCode: string, ids: string[]): Promise<ActionResult<{ approved: number }>> {
   try {
     const ctx = await getProjectContext(companyCode, projectCode);
+    if (ctx.project.status === "cerrada") return { ok: false, error: "La obra está cerrada (solo lectura)." };
     if (!can(ctx.role, "approveExpense")) return { ok: false, error: "Solo Gerencia aprueba gastos." };
     const sb = await supabaseServer();
     const { data: rows } = await sb.from("expenses").select("id, status, doc_type, files:expense_files(count)").in("id", ids).eq("project_id", ctx.project.id);
@@ -218,6 +228,7 @@ export async function approveExpenses(companyCode: string, projectCode: string, 
 export async function observeExpenses(companyCode: string, projectCode: string, ids: string[], comment: string): Promise<ActionResult> {
   try {
     const ctx = await getProjectContext(companyCode, projectCode);
+    if (ctx.project.status === "cerrada") return { ok: false, error: "La obra está cerrada (solo lectura)." };
     if (!can(ctx.role, "approveExpense")) return { ok: false, error: "Solo Gerencia observa gastos." };
     if (comment.trim().length < 5) return { ok: false, error: "Escribe el motivo de la observación." };
     const sb = await supabaseServer();
@@ -234,6 +245,7 @@ export async function observeExpenses(companyCode: string, projectCode: string, 
 export async function voidExpense(companyCode: string, projectCode: string, id: string, reason: string): Promise<ActionResult> {
   try {
     const ctx = await getProjectContext(companyCode, projectCode);
+    if (ctx.project.status === "cerrada") return { ok: false, error: "La obra está cerrada (solo lectura)." };
     if (!can(ctx.role, "registerExpense")) return { ok: false, error: "Tu rol no puede anular comprobantes." };
     if (reason.trim().length < 5) return { ok: false, error: "El motivo de anulación es obligatorio." };
     const sb = await supabaseServer();

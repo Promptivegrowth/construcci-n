@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { NoAccess } from "@/components/ui/no-access";
 import { PageHeader } from "@/components/ui/primitives";
 import { can } from "@/lib/permissions";
 import { getCompanyContext } from "@/lib/session";
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Nueva obra" };
 export default async function NuevaObraPage({ params }: { params: Promise<{ company: string }> }) {
   const { company } = await params;
   const ctx = await getCompanyContext(company);
-  if (!can(ctx.role, "createProject")) redirect(`/empresa/${company}?denegado=crear-obra`);
+  if (!can(ctx.role, "createProject")) return <NoAccess role={ctx.role} what="la creación de obras (solo Gerencia)" back={`/empresa/${company}/alertas`} />;
   const sb = await supabaseServer();
   const [{ data: projects }, { data: members }, { data: nodes }] = await Promise.all([
     sb.from("projects").select("id, code, short_name, name, project_type").eq("company_id", ctx.company.id).order("code"),

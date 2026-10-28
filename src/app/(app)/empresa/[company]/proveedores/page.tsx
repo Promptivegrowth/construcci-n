@@ -4,6 +4,8 @@ import { toNum } from "@/lib/format";
 import { getCompanyContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { SuppliersView, type SupplierRow } from "./_components/suppliers-view";
+import { canView } from "@/lib/permissions";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Proveedores" };
 
@@ -11,6 +13,7 @@ export default async function ProveedoresPage({ params, searchParams }: { params
   const { company } = await params;
   const { q } = await searchParams;
   const ctx = await getCompanyContext(company);
+  if (!canView(ctx.role, "finance")) return <NoAccess role={ctx.role} area="finance" back={`/empresa/${company}/alertas`} backLabel="Volver" />;
   const sb = await supabaseServer();
 
   const [{ data: suppliers }, { data: projects }, { data: expenses }] = await Promise.all([

@@ -71,6 +71,7 @@ export async function createOrder(companyCode: string, projectCode: string, inpu
 export async function changeOrderStatus(companyCode: string, projectCode: string, id: string, action: "aprobar" | "rechazar" | "cerrar" | "anular", note?: string): Promise<ActionResult> {
   try {
     const ctx = await getProjectContext(companyCode, projectCode);
+    if (ctx.project.status === "cerrada") return { ok: false, error: "La obra está cerrada (solo lectura)." };
     if (!can(ctx.role, "approveOrder")) return { ok: false, error: "Solo Gerencia aprueba, cierra o anula órdenes." };
     const sb = await supabaseServer();
     const { data: o } = await sb.from("orders").select("id, status, number, notes").eq("id", id).eq("project_id", ctx.project.id).single();

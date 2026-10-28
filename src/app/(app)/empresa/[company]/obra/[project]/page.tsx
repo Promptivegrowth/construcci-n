@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { COST_TYPE_LABEL, buildTree, conciliation, elapsed, flatten, fortnightOf, fortnightLabel, monthsBetween, projectEnd, ratio, sCurve, totals, VALUED_STATUS } from "@/lib/calc";
 import { monthLabel, todayISO, toNum } from "@/lib/format";
 import { getDeclaredSeries, getPaymentsSeries, getPhases, getWbsStats } from "@/lib/queries";
+import { redirect } from "next/navigation";
+import { canView } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { Executive, type ExecutiveData } from "./_components/executive";
@@ -14,6 +16,8 @@ export async function generateMetadata({ params }: { params: Promise<{ project: 
 export default async function ProjectSummaryPage({ params }: { params: Promise<{ company: string; project: string }> }) {
   const { company, project: code } = await params;
   const ctx = await getProjectContext(company, code);
+  // El resumen ejecutivo es financiero: Almacén entra directo a su kardex
+  if (!canView(ctx.role, "finance")) redirect(`/empresa/${company}/obra/${code}/almacen`);
   const p = ctx.project;
   const sb = await supabaseServer();
   const [stats, phases, pays, declared, { data: vals }, { data: colls }, { data: alerts }] = await Promise.all([

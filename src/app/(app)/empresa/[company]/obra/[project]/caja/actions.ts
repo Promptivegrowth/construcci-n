@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { friendlyError, type ActionResult } from "@/lib/errors";
+import { todayISO } from "@/lib/format";
 import { can } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -65,19 +66,11 @@ export async function depositFunds(companyCode: string, projectCode: string, id:
     if (!can(ctx.role, "depositFunds")) return { ok: false, error: "Solo Contabilidad registra depósitos." };
     if (input.operation.trim().length < 4) return { ok: false, error: "Ingresa el número de operación bancaria." };
     const sb = await supabaseServer();
-    const { data: r } = await sb.from("fund_requests").select("id, seq, amount, reason, status, box_id").eq("id", id).eq("project_id", ctx.project.id).single();
-    if (!r || r.status !== "aprobada") return { ok: false, error: "Solo se depositan solicitudes aprobadas." };
-    if (!r.box_id) return { ok: false, error: "La solicitud no tiene caja asociada." };
-    const when = input.date || new Date().toISOString().slice(0, 10);
-    const { error } = await sb.from("fund_requests").update({ status: "depositada", deposited_by: ctx.user.id, deposited_at: new Date(`${when}T12:00:00`).toISOString(), deposit_operation: input.operation.trim() }).eq("id", id);
+    // La base registra el depósito y el ingreso de caja en una sola transacción (bloquea dobles registros)
+    const { data: seq, error } = await sb.rpc("deposit_fund_request", { p_request: id, p_operation: input.operation.trim(), p_date: input.date || todayISO() });
     if (error) throw error;
-    const { error: mErr } = await sb.from("cash_movements").insert({
-      box_id: r.box_id, project_id: ctx.project.id, movement_type: "ingreso", amount: r.amount, moved_at: when,
-      concept: `Depósito solicitud N° ${r.seq} — ${r.reason}`, fund_request_id: r.id, created_by: ctx.user.id,
-    });
-    if (mErr) throw mErr;
     revalidatePath(`${path(companyCode, projectCode)}/caja`);
-    return { ok: true, message: `Depósito registrado: la caja recibe la solicitud N° ${r.seq}.` };
+    return { ok: true, message: `Depósito registrado: la caja recibe la solicitud N° ${seq}.` };
   } catch (e) {
     return { ok: false, error: friendlyError(e) };
   }
@@ -87,27 +80,17 @@ export async function renderFunds(companyCode: string, projectCode: string, id: 
   try {
     const ctx = await getProjectContext(companyCode, projectCode);
     if (!["administrador", "gerente_proyectos", "contabilidad", "residente"].includes(ctx.role)) return { ok: false, error: "La rendición la registra el residente, el administrador de obra o Contabilidad." };
+    if (input.extras.some((x) => !x.concept.trim() || !(x.amount > 0))) return { ok: false, error: "Cada egreso adicional necesita concepto y un monto mayor a cero." };
+    if (!input.expenseIds.length && !input.extras.length) return { ok: false, error: "Agrega al menos un comprobante o egreso a la rendición." };
     const sb = await supabaseServer();
-    const { data: r } = await sb.from("fund_requests").select("id, seq, amount, status, box_id, requested_by").eq("id", id).eq("project_id", ctx.project.id).single();
-    if (!r || r.status !== "depositada") return { ok: false, error: "Solo se rinden solicitudes depositadas." };
-    const extras = input.extras.filter((x) => x.concept.trim() && x.amount > 0);
-    if (!input.expenseIds.length && !extras.length) return { ok: false, error: "Agrega al menos un comprobante o egreso a la rendición." };
-    const { data: exps } = input.expenseIds.length
-      ? await sb.from("expenses").select("id, total_pen, issue_date, description, status").in("id", input.expenseIds).eq("project_id", ctx.project.id)
-      : { data: [] as { id: string; total_pen: number; issue_date: string; description: string; status: string }[] };
-    if ((exps ?? []).some((e) => e.status === "anulado")) return { ok: false, error: "No se pueden rendir comprobantes anulados." };
-    const rows = [
-      ...(exps ?? []).map((e) => ({ box_id: r.box_id!, project_id: ctx.project.id, movement_type: "egreso", amount: Number(e.total_pen), moved_at: e.issue_date, concept: e.description, expense_id: e.id, fund_request_id: r.id, created_by: ctx.user.id })),
-      ...extras.map((x) => ({ box_id: r.box_id!, project_id: ctx.project.id, movement_type: "egreso", amount: r2(x.amount), moved_at: x.date || new Date().toISOString().slice(0, 10), concept: x.concept.trim(), fund_request_id: r.id, created_by: ctx.user.id })),
-    ];
-    const total = r2(rows.reduce((s, x) => s + x.amount, 0));
-    if (total > Number(r.amount) * 1.2) return { ok: false, error: `La rendición (S/ ${total.toFixed(2)}) excede en más de 20% el monto depositado.` };
-    const { error: mErr } = await sb.from("cash_movements").insert(rows);
-    if (mErr) throw mErr;
-    const { error } = await sb.from("fund_requests").update({ status: "rendida", rendered_amount: total, rendered_at: new Date().toISOString() }).eq("id", id);
+    // Rendición atómica: los comprobantes rendidos quedan pagados con caja y salen de la bandeja de Pagos
+    const { data, error } = await sb.rpc("render_fund_request", {
+      p_request: id, p_expenses: input.expenseIds, p_extras: input.extras.map((x) => ({ concept: x.concept.trim(), amount: r2(x.amount), date: x.date })),
+    });
     if (error) throw error;
-    revalidatePath(`${path(companyCode, projectCode)}/caja`);
-    const diff = r2(Number(r.amount) - total);
+    const r = data as { seq: number; total: number; amount: number };
+    revalidatePath(path(companyCode, projectCode), "layout");
+    const diff = r2(Number(r.amount) - Number(r.total));
     return { ok: true, message: `Rendición N° ${r.seq} registrada · ${diff >= 0 ? `queda S/ ${diff.toFixed(2)} en caja` : `reembolso de S/ ${(-diff).toFixed(2)} al responsable`}.` };
   } catch (e) {
     return { ok: false, error: friendlyError(e) };

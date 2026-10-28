@@ -4,11 +4,12 @@ import { KpiCard } from "@/components/ui/cont-kit";
 import { DateRangeFilter, FilterBar, UrlSegment, UrlSelect } from "@/components/ui/filters";
 import { PageHeader } from "@/components/ui/primitives";
 import { addDaysISO, money, toNum, todayISO } from "@/lib/format";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { LimaExpenseButton } from "./_components/lima-expense";
 import { PaymentsHistory, PendingPayments, type PayRow, type PendingRow } from "./_components/payments-view";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Pagos" };
 
@@ -18,6 +19,7 @@ export default async function PagosPage({ params, searchParams }: { params: Prom
   const { company, project } = await params;
   const sp = await searchParams;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "accounting")) return <NoAccess role={ctx.role} area="accounting" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const pid = ctx.project.id;
   const tab = sp.tab === "historial" ? "historial" : "pendientes";

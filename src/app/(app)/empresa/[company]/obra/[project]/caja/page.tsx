@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { toNum } from "@/lib/format";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { PageHeader } from "@/components/ui/primitives";
 import { CashView, type FundRow, type MovementRow, type RenderCandidate } from "./cash-view";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Caja y fondos" };
 
 export default async function CajaPage({ params }: { params: Promise<{ company: string; project: string }> }) {
   const { company, project } = await params;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "finance")) return <NoAccess role={ctx.role} area="finance" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const pid = ctx.project.id;
 
@@ -20,8 +22,12 @@ export default async function CajaPage({ params }: { params: Promise<{ company: 
     sb.from("cash_movements").select("id, box_id, movement_type, amount, moved_at, concept, expense_id, fund_request_id, created_at").eq("project_id", pid).order("moved_at", { ascending: false }).limit(2000),
     sb.from("fund_requests").select("*").eq("project_id", pid).order("created_at", { ascending: false }),
     sb.from("expenses").select("id, issue_date, description, total_pen, doc_type, series, doc_number, status, origin, supplier:suppliers(name)")
-      .eq("project_id", pid).in("doc_type", ["BV", "TK", "FT", "RH", "OT"]).lte("total_pen", 3000).not("status", "in", "(anulado,borrador)").order("issue_date", { ascending: false }).limit(300),
+      .eq("project_id", pid).in("doc_type", ["BV", "TK", "FT", "RH", "OT"]).lte("total_pen", 3000).in("status", ["declarado", "aprobado"]).order("issue_date", { ascending: false }).limit(300),
   ]);
+  // Un comprobante que Contabilidad ya pagó (total o parcialmente) no se rinde con caja: se pagaría dos veces
+  const candIds = (candidates ?? []).map((e) => e.id);
+  const { data: withPay } = candIds.length ? await sb.from("v_expense_paid").select("expense_id").in("expense_id", candIds).gt("payments_count", 0) : { data: [] };
+  const paidSet = new Set((withPay ?? []).map((p) => p.expense_id));
   const ids = [...new Set((reqs ?? []).flatMap((r) => [r.requested_by, r.approved_by, r.deposited_by]).concat((boxes ?? []).map((b) => b.responsible_id)).filter(Boolean) as string[])];
   const { data: people } = ids.length ? await sb.from("profiles").select("id, full_name").in("id", ids) : { data: [] };
   const name = (id: string | null) => people?.find((p) => p.id === id)?.full_name ?? "—";
@@ -40,7 +46,7 @@ export default async function CajaPage({ params }: { params: Promise<{ company: 
     id: m.id, type: m.movement_type, amount: toNum(m.amount), date: m.moved_at, concept: m.concept, expense_id: m.expense_id,
     request: m.fund_request_id ? `N° ${reqSeq.get(m.fund_request_id) ?? ""}` : "",
   }));
-  const render: RenderCandidate[] = (candidates ?? []).filter((e) => !linked.has(e.id)).map((e) => ({
+  const render: RenderCandidate[] = (candidates ?? []).filter((e) => !linked.has(e.id) && !paidSet.has(e.id)).map((e) => ({
     id: e.id, date: e.issue_date, description: e.description, total: toNum(e.total_pen), ref: `${e.series ?? ""}${e.series ? "-" : ""}${e.doc_number ?? "S/N"}`,
     supplier: (e.supplier as unknown as { name: string } | null)?.name ?? "—", origin: e.origin,
   }));

@@ -228,7 +228,7 @@ export function CashView({ companyCode, projectCode, box, funds, movements, rend
             {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}Registrar rendición</Button></>}>
         <div className="space-y-4">
           <div>
-            <p className="mb-2 text-xs font-semibold text-ink-soft">Comprobantes registrados en la obra (no rendidos)</p>
+            <p className="mb-2 text-xs font-semibold text-ink-soft">Comprobantes de la obra sin pagar · al rendirlos quedan <b>pagados con caja</b> y salen de la bandeja de Pagos</p>
             <div className="scrollbar-thin max-h-72 space-y-1 overflow-y-auto rounded-xl border border-line p-1.5">
               {render.slice(0, 120).map((e) => (
                 <label key={e.id} className={cn("flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition hover:bg-slate-50", pickedExp.has(e.id) && "bg-brand-blue-50")}>

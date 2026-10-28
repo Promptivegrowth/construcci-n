@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { NoAccess } from "@/components/ui/no-access";
 import { PageHeader } from "@/components/ui/primitives";
 import { can } from "@/lib/permissions";
 import { getCompanyContext } from "@/lib/session";
@@ -14,7 +14,7 @@ export default async function AuditoriaPage({ params, searchParams }: { params: 
   const { company } = await params;
   const sp = await searchParams;
   const ctx = await getCompanyContext(company);
-  if (!can(ctx.role, "viewAudit")) redirect(`/empresa/${company}`);
+  if (!can(ctx.role, "viewAudit")) return <NoAccess role={ctx.role} area="audit" back={`/empresa/${company}/alertas`} />;
   const sb = await supabaseServer();
   const page = Math.max(1, Number(sp.page ?? 1) || 1);
 

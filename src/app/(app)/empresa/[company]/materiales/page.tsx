@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getCompanyContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { toNum } from "@/lib/format";
 import { MaterialsView, type CatalogRow, type TraceRow } from "./_components/materials-view";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Catálogo de materiales" };
 
@@ -14,6 +15,7 @@ export default async function MaterialesPage({ params, searchParams }: {
   const { company } = await params;
   const sp = await searchParams;
   const ctx = await getCompanyContext(company);
+  if (!canView(ctx.role, "warehouse")) return <NoAccess role={ctx.role} area="warehouse" back={`/empresa/${company}/alertas`} backLabel="Volver" />;
   const sb = await supabaseServer();
 
   const [{ data: materials }, { data: projects }] = await Promise.all([

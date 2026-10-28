@@ -6,10 +6,11 @@ import { Stagger, StaggerItem } from "@/components/ui/motion";
 import { ButtonLink, Card, PageHeader } from "@/components/ui/primitives";
 import { EXPENSE_STATUS } from "@/lib/calc";
 import { DOC_TYPE_LABEL, toNum } from "@/lib/format";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ExpensesTable, type ExpenseRow } from "./_components/expenses-table";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Gastos y comprobantes" };
 
@@ -19,6 +20,7 @@ export default async function GastosPage({ params, searchParams }: { params: Pro
   const { company, project } = await params;
   const sp = await searchParams;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "finance")) return <NoAccess role={ctx.role} area="finance" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const pid = ctx.project.id;
 

@@ -1,3 +1,4 @@
+import { can, canView, type Role } from "@/lib/permissions";
 import { getSession } from "@/lib/session";
 import { signedUrls } from "@/lib/storage";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -27,7 +28,10 @@ export default async function CampoPage({ searchParams }: { searchParams: Promis
   ]);
 
   const roleByCompany = Object.fromEntries(s.memberships.map((m) => [m.company.id, m.role]));
-  const urls = await signedUrls((pending ?? []).map((e) => (e.files as unknown as { file_path: string }[] | null)?.[0]?.file_path));
+  // Cada obra solo entrega lo que el rol puede ver: cifras del WBS (finanzas) y bandeja de aprobación (Gerencia)
+  const roleOf = new Map((projects ?? []).map((p) => [p.id, (s.isHolding ? "gerente_general" : roleByCompany[(p.company as unknown as { id: string }).id] ?? null) as Role | null]));
+  const toApprove = (pending ?? []).filter((e) => can(roleOf.get(e.project_id), "approveExpense"));
+  const urls = await signedUrls(toApprove.map((e) => (e.files as unknown as { file_path: string }[] | null)?.[0]?.file_path));
 
   const data: CampoData = {
     user: { id: s.user.id, name: s.profile.full_name, isHolding: s.isHolding },
@@ -39,11 +43,14 @@ export default async function CampoPage({ searchParams }: { searchParams: Promis
       };
     }),
     phases: (phases ?? []).map((p) => ({ id: p.id, projectId: p.project_id, code: p.code, name: p.name })),
-    leaves: (leaves ?? []).map((l) => ({ id: l.wbs_id!, projectId: l.project_id!, code: l.code!, name: l.name!, phaseId: l.phase_id, budget: toNum(l.budget), used: Math.max(toNum(l.paid), toNum(l.declared)) })),
+    leaves: (leaves ?? []).map((l) => {
+      const fin = canView(roleOf.get(l.project_id!), "finance");
+      return { id: l.wbs_id!, projectId: l.project_id!, code: l.code!, name: l.name!, phaseId: l.phase_id, budget: fin ? toNum(l.budget) : 0, used: fin ? Math.max(toNum(l.paid), toNum(l.declared)) : 0 };
+    }),
     suppliers: (suppliers ?? []).map((x) => ({ id: x.id, companyId: x.company_id, ruc: x.ruc, name: x.name })),
     materials: (materials ?? []).map((m) => ({ id: m.id, companyId: m.company_id, code: m.code, name: m.name, unit: m.unit })),
     attendance: (attendance ?? []).map((a) => ({ id: a.id, projectId: a.project_id, kind: a.kind, markedAt: a.marked_at, distance: a.distance_m === null ? null : toNum(a.distance_m), within: a.within_geofence })),
-    pending: (pending ?? []).map((e) => {
+    pending: toApprove.map((e) => {
       const path = (e.files as unknown as { file_path: string }[] | null)?.[0]?.file_path;
       return {
         id: e.id, projectId: e.project_id, seq: e.seq, description: e.description, doc: `${e.doc_type} ${[e.series, e.doc_number].filter(Boolean).join("-")}`,

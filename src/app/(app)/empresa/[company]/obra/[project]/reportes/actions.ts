@@ -3,6 +3,7 @@ import { buildTree, conciliation, CONCILIATION_LABEL, flatten, LABOR_LABEL } fro
 import type { ExportSheet } from "@/lib/export/types";
 import { DOC_TYPE_LABEL, money, toNum } from "@/lib/format";
 import { getWbsStats } from "@/lib/queries";
+import { canView } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -13,6 +14,7 @@ const fmtRange = (r: Range) => (r.from || r.to ? `${r.from ?? "inicio"} al ${r.t
 
 async function base(companyCode: string, projectCode: string) {
   const ctx = await getProjectContext(companyCode, projectCode);
+  if (!canView(ctx.role, "finance")) throw new Error("Tu rol no tiene acceso a los reportes financieros de la obra.");
   const sb = await supabaseServer();
   return { ctx, sb, pid: ctx.project.id };
 }

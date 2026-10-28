@@ -71,3 +71,8 @@ scripts                           Migraciones, seed, capturas y pruebas de expor
 - `node scripts/shot.mjs <ruta> <salida.png> <email> [ancho] [alto] [full]`: captura con sesión iniciada (en Git Bash anteponer `MSYS_NO_PATHCONV=1`).
 - `node scripts/overflow.mjs <ruta> <email>`: detecta desbordes horizontales en móvil (390 px).
 - `node scripts/test-exports.mjs <carpeta>`: descarga real de Excel/PDF (resumen ejecutivo y liquidación con sustentos).
+- `node scripts/qa-crawl.mjs [salida.json] [usuarios]`: recorre todas las pantallas por usuario y empresa, pulsa los botones no destructivos y prueba el acceso por URL de cada rol.
+- `node scripts/qa-flows.mjs [carpeta]`: ciclos completos pulsando los botones (gasto, orden, fondos, valorización, almacén). `--cleanup` borra lo creado (marca `[QA-E2E]`).
+- `node scripts/qa-integrity.mjs`: intenta por la API, con la sesión de cada rol, lo que la base debe impedir (aprobarse a sí mismo, doble pago por caja, cambios en periodo cerrado, etc.). No requiere el servidor web.
+
+Las reglas de estado (quién aprueba, paga, deposita o rinde) se validan en la base de datos (`0009_integrity.sql`), no solo en los botones.

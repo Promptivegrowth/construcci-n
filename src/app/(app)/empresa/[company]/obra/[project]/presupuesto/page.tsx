@@ -5,12 +5,13 @@ import { CountUp, Stagger, StaggerItem } from "@/components/ui/motion";
 import { ButtonLink, Card, PageHeader, cn } from "@/components/ui/primitives";
 import { buildTree, elapsed, ratio, totals } from "@/lib/calc";
 import { pct } from "@/lib/format";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getPhases, getWbsStats } from "@/lib/queries";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { BudgetChanges } from "./_components/budget-changes";
 import { WbsTree } from "./_components/wbs-tree";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Presupuesto y WBS" };
 
@@ -18,6 +19,7 @@ export default async function BudgetPage({ params, searchParams }: { params: Pro
   const { company, project } = await params;
   const { fase } = await searchParams;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "finance")) return <NoAccess role={ctx.role} area="finance" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const p = ctx.project;
   const sb = await supabaseServer();
   const [stats, phases, { data: changes }] = await Promise.all([

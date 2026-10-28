@@ -6,6 +6,8 @@ import { toNum, todayISO } from "@/lib/format";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CxpView, type CxpRow, type RetentionRow } from "./_components/cxp-view";
+import { canView } from "@/lib/permissions";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Cuentas por pagar" };
 
@@ -23,6 +25,7 @@ function bucketOf(due: string, today: string) {
 export default async function CxpPage({ params }: { params: Promise<{ company: string; project: string }> }) {
   const { company, project } = await params;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "accounting")) return <NoAccess role={ctx.role} area="accounting" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const pid = ctx.project.id;
   const today = todayISO();

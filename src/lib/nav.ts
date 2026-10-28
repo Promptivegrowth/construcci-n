@@ -1,12 +1,11 @@
-import type { Role } from "@/lib/permissions";
+import { VIEW, type Role } from "@/lib/permissions";
 
 export type NavItem = { href: string; label: string; icon: string; roles?: Role[]; exact?: boolean };
 export type NavSection = { title: string; items: NavItem[]; roles?: Role[] };
 
-const FIN: Role[] = ["gerente_general", "gerente_proyectos", "residente", "administrador", "contabilidad"];
-const ADMIN: Role[] = ["gerente_general", "gerente_proyectos", "residente", "administrador", "contabilidad"];
-const CONTA: Role[] = ["gerente_general", "gerente_proyectos", "contabilidad"];
-const ALM: Role[] = ["gerente_general", "gerente_proyectos", "administrador", "almacen", "residente"];
+const FIN: Role[] = VIEW.finance;
+const CONTA: Role[] = VIEW.accounting;
+const ALM: Role[] = VIEW.warehouse;
 
 /** Navegación dentro de una obra: Administración, Contabilidad y Almacén/Logística (sin comercial). */
 export function projectNav(base: string): NavSection[] {
@@ -14,20 +13,21 @@ export function projectNav(base: string): NavSection[] {
     {
       title: "Control de obra",
       items: [
-        { href: base, label: "Resumen ejecutivo", icon: "LayoutDashboard", exact: true },
+        // Almacén entra directo a su kardex: el resumen ejecutivo es financiero
+        { href: base, label: "Resumen ejecutivo", icon: "LayoutDashboard", exact: true, roles: FIN },
         { href: `${base}/presupuesto`, label: "Presupuesto y WBS", icon: "Layers", roles: FIN },
         { href: `${base}/reportes`, label: "Reportes", icon: "FileBarChart", roles: FIN },
       ],
     },
     {
       title: "Administración",
-      roles: [...ADMIN, "almacen"],
+      roles: [...FIN, "almacen"],
       items: [
-        { href: `${base}/gastos`, label: "Gastos y comprobantes", icon: "Receipt", roles: ADMIN },
-        { href: `${base}/aprobaciones`, label: "Aprobaciones", icon: "ShieldCheck", roles: ["gerente_general", "gerente_proyectos"] },
+        { href: `${base}/gastos`, label: "Gastos y comprobantes", icon: "Receipt", roles: FIN },
+        { href: `${base}/aprobaciones`, label: "Aprobaciones", icon: "ShieldCheck", roles: VIEW.approvals },
         // Almacén solicita órdenes de compra de materiales (PERMS.requestOrder)
         { href: `${base}/ordenes`, label: "Órdenes O/S y O/C", icon: "ClipboardList" },
-        { href: `${base}/caja`, label: "Caja y fondos", icon: "Wallet", roles: ADMIN },
+        { href: `${base}/caja`, label: "Caja y fondos", icon: "Wallet", roles: FIN },
       ],
     },
     {
@@ -44,7 +44,7 @@ export function projectNav(base: string): NavSection[] {
     },
     {
       title: "Mano de obra",
-      roles: [...CONTA, "administrador", "residente"],
+      roles: VIEW.labor,
       items: [{ href: `${base}/mano-de-obra`, label: "Planillas por categoría", icon: "HardHat" }],
     },
     {
@@ -71,11 +71,11 @@ export function companyNav(base: string): NavSection[] {
     {
       title: "Empresa",
       items: [
-        { href: base, label: "Obras", icon: "Building2", exact: true },
+        { href: base, label: "Obras", icon: "Building2", exact: true, roles: FIN },
         { href: `${base}/alertas`, label: "Alertas", icon: "BellRing" },
         { href: `${base}/proveedores`, label: "Proveedores", icon: "Truck", roles: FIN },
         { href: `${base}/materiales`, label: "Catálogo de materiales", icon: "PackageSearch", roles: ALM },
-        { href: `${base}/auditoria`, label: "Trazabilidad", icon: "History", roles: CONTA },
+        { href: `${base}/auditoria`, label: "Trazabilidad", icon: "History", roles: VIEW.audit },
         { href: `${base}/usuarios`, label: "Usuarios y accesos", icon: "UsersRound", roles: ["gerente_general"] },
       ],
     },

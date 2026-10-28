@@ -9,7 +9,8 @@ import { CountUp, Stagger, StaggerItem } from "@/components/ui/motion";
 import { Badge, ButtonLink, Card, CardBody, CardHeader, EmptyState, PageHeader, cn } from "@/components/ui/primitives";
 import { consumptionLevel, elapsed, PROJECT_STATUS, ratio } from "@/lib/calc";
 import { dateShort, money, moneyShort, pct } from "@/lib/format";
-import { can } from "@/lib/permissions";
+import { redirect } from "next/navigation";
+import { can, canView } from "@/lib/permissions";
 import { getProjectsSummary } from "@/lib/queries";
 import { getCompanyContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -29,6 +30,8 @@ export default async function CompanyPage({ params, searchParams }: { params: Pr
     sb.from("alerts").select("project_id, severity").eq("company_id", ctx.company.id).eq("resolved", false),
   ]);
   const all = projectsRaw ?? [];
+  // Sin acceso financiero (Almacén): entra al kardex de su primera obra
+  if (!canView(ctx.role, "finance")) redirect(all[0] ? `/empresa/${code}/obra/${all[0].code}/almacen` : `/empresa/${code}/alertas`);
   const summary = await getProjectsSummary(all.map((p) => p.id));
   const projects = estado ? all.filter((p) => p.status === estado) : all;
   const base = `/empresa/${code}`;

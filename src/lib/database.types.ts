@@ -2603,6 +2603,11 @@ export type Database = {
         Args: { cid: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      deposit_fund_request: {
+        Args: { p_date: string; p_operation: string; p_request: string }
+        Returns: number
+      }
+      direct_write: { Args: never; Returns: boolean }
       has_company_role: {
         Args: { cid: string; roles: Database["public"]["Enums"]["app_role"][] }
         Returns: boolean
@@ -2611,8 +2616,15 @@ export type Database = {
         Args: { pid: string; roles: Database["public"]["Enums"]["app_role"][] }
         Returns: boolean
       }
+      import_budget: {
+        Args: { p_project: string; p_rows: Json }
+        Returns: Json
+      }
+      in_closed_period: { Args: { d: string; pid: string }; Returns: boolean }
       is_company_member: { Args: { cid: string }; Returns: boolean }
       is_holding_admin: { Args: never; Returns: boolean }
+      my_audit_companies: { Args: never; Returns: string[] }
+      my_projects: { Args: never; Returns: string[] }
       project_role: {
         Args: { pid: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -2623,6 +2635,14 @@ export type Database = {
       }
       project_writable: { Args: { pid: string }; Returns: boolean }
       refresh_project_alerts: { Args: { p_project: string }; Returns: number }
+      render_fund_request: {
+        Args: { p_expenses: string[]; p_extras: Json; p_request: string }
+        Returns: Json
+      }
+      settle_cash_expense: {
+        Args: { p_date: string; p_expense: string; p_note: string }
+        Returns: undefined
+      }
       upsert_alert: {
         Args: {
           p_company: string

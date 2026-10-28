@@ -4,12 +4,15 @@ import { buildTree, conciliation, flatten, totals, type WbsNode } from "@/lib/ca
 import { getWbsStats } from "@/lib/queries";
 import { getProjectContext } from "@/lib/session";
 import { ConciliationView, type CatCard, type LeafCard } from "./_components/conciliation-view";
+import { canView } from "@/lib/permissions";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Conciliación Obra vs. Contabilidad" };
 
 export default async function ConciliacionPage({ params }: { params: Promise<{ company: string; project: string }> }) {
   const { company, project } = await params;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "accounting")) return <NoAccess role={ctx.role} area="accounting" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const stats = await getWbsStats(ctx.project.id);
   const tree = buildTree(stats);
   const t = totals(stats);

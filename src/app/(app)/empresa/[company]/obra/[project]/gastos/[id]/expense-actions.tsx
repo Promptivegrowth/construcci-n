@@ -45,7 +45,8 @@ export function ExpenseActions({ companyCode, projectCode, id, status, docType, 
       {canPay && ["aprobado", "pagado_parcial"].includes(status) && (
         <ButtonLink href={`${base}/pagos?gasto=${id}`} variant="success"><Banknote className="h-4 w-4" />Registrar pago</ButtonLink>
       )}
-      {canRegister && status !== "anulado" && !hasPayments && (
+      {/* Un comprobante aprobado solo lo anula Gerencia (la base lo valida igual) */}
+      {canRegister && status !== "anulado" && !hasPayments && (status !== "aprobado" || canApprove) && (
         <Button variant="ghost" className="text-danger hover:bg-danger-50" onClick={() => setModal("void")} disabled={!!busy}><Ban className="h-4 w-4" />Anular</Button>
       )}
 

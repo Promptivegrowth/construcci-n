@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { NoAccess } from "@/components/ui/no-access";
 import { PageHeader } from "@/components/ui/primitives";
 import { getCompanyContext } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Usuarios y accesos" };
 export default async function UsuariosPage({ params }: { params: Promise<{ company: string }> }) {
   const { company } = await params;
   const ctx = await getCompanyContext(company);
-  if (!ctx.isHolding) redirect(`/empresa/${company}?denegado=usuarios`);
+  if (!ctx.isHolding) return <NoAccess role={ctx.role} what="la gestión de usuarios (solo Gerencia General del holding)" back={`/empresa/${company}/alertas`} />;
   // Verificado Gerencia General: se usa service role para listar todos los usuarios del holding.
   const admin = supabaseAdmin();
   const [{ data: profiles }, { data: members }, { data: pm }, { data: companies }, { data: projects }] = await Promise.all([

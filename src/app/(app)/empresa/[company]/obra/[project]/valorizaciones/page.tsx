@@ -4,11 +4,12 @@ import { KpiCard } from "@/components/ui/cont-kit";
 import { PageHeader } from "@/components/ui/primitives";
 import { VALUED_STATUS } from "@/lib/calc";
 import { pct, toNum } from "@/lib/format";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getPaymentsSeries, getPhases } from "@/lib/queries";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ValuationsView, type PhaseRow, type ValRow } from "./_components/valuations-view";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Valorizaciones y cobros" };
 
@@ -18,6 +19,7 @@ const INVOICED = ["facturada", "cobrada_parcial", "cobrada"];
 export default async function ValorizacionesPage({ params }: { params: Promise<{ company: string; project: string }> }) {
   const { company, project } = await params;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "accounting")) return <NoAccess role={ctx.role} area="accounting" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const pid = ctx.project.id;
   const [{ data: vals }, { data: colls }, phases, payments] = await Promise.all([

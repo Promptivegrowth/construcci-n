@@ -40,6 +40,32 @@ export const PERMS = {
 
 export type Permission = keyof typeof PERMS;
 
+// Áreas que cada rol puede ver. Las usan el menú (nav.ts) y las páginas, para que una URL escrita a mano
+// no muestre lo que el menú oculta.
+export const VIEW = {
+  finance: [GG, GP, "residente", "administrador", "contabilidad"],
+  accounting: [GG, GP, "contabilidad"],
+  labor: [GG, GP, "contabilidad", "administrador", "residente"],
+  warehouse: [GG, GP, "administrador", "almacen", "residente", "contabilidad"],
+  approvals: [GG, GP],
+  audit: [GG, GP, "contabilidad"],
+} satisfies Record<string, Role[]>;
+
+export type ViewArea = keyof typeof VIEW;
+
+export const VIEW_LABEL: Record<ViewArea, string> = {
+  finance: "la información financiera de la obra",
+  accounting: "la sección de Contabilidad",
+  labor: "las planillas de mano de obra",
+  warehouse: "el almacén",
+  approvals: "las aprobaciones",
+  audit: "la trazabilidad",
+};
+
+export function canView(role: Role | null | undefined, area: ViewArea) {
+  return !!role && (VIEW[area] as Role[]).includes(role);
+}
+
 export function can(role: Role | null | undefined, perm: Permission) {
   return !!role && (PERMS[perm] as Role[]).includes(role);
 }

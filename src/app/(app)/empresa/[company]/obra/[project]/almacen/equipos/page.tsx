@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { toNum } from "@/lib/format";
 import { EquipmentView, type EquipmentItem } from "./_components/equipment-view";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Equipos menores" };
 
 export default async function EquiposPage({ params }: { params: Promise<{ company: string; project: string }> }) {
   const { company, project } = await params;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "warehouse")) return <NoAccess role={ctx.role} area="warehouse" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const [{ data: equipment }, { data: assignments }, { data: orders }, { data: projects }, { data: profiles }] = await Promise.all([
     sb.from("equipment").select("*").eq("company_id", ctx.company.id).order("code"),

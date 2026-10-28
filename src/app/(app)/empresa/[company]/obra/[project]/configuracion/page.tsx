@@ -2,17 +2,19 @@ import type { Metadata } from "next";
 import { Lock } from "lucide-react";
 import { Badge, PageHeader } from "@/components/ui/primitives";
 import { PROJECT_STATUS } from "@/lib/calc";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { signedUrls } from "@/lib/storage";
 import { supabaseServer } from "@/lib/supabase/server";
 import { ConfigView } from "./_components/config-view";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Ficha de obra" };
 
 export default async function ConfiguracionPage({ params }: { params: Promise<{ company: string; project: string }> }) {
   const { company, project: code } = await params;
   const ctx = await getProjectContext(company, code);
+  if (!canView(ctx.role, "finance")) return <NoAccess role={ctx.role} area="finance" back={`/empresa/${company}/obra/${code}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const p = ctx.project;
 

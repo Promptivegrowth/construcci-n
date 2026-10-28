@@ -7,6 +7,9 @@ export function friendlyError(e: unknown): string {
   if (msg.includes("PAGO_EXCEDIDO")) return msg.replace("PAGO_EXCEDIDO: ", "");
   if (msg.includes("PAGO_NO_PERMITIDO")) return msg.replace("PAGO_NO_PERMITIDO: ", "");
   if (msg.includes("STOCK_INSUFICIENTE")) return msg.replace("STOCK_INSUFICIENTE: ", "Stock insuficiente: ");
+  // Reglas de estado de la base (0009): el texto ya viene redactado para el usuario
+  const rule = msg.match(/^(?:ESTADO_NO_PERMITIDO|COMPROBANTE_BLOQUEADO|CAJA_BLOQUEADA|WBS_CON_MOVIMIENTOS|OBRA_CERRADA): (.*)$/s);
+  if (rule) return rule[1].charAt(0).toUpperCase() + rule[1].slice(1);
   if (msg.includes("expenses_unique_document") || (code === "23505" && msg.includes("expenses"))) return "Comprobante duplicado: ya existe la misma combinación RUC + tipo + serie + número.";
   if (code === "23505") return "Ya existe un registro con esos datos.";
   if (code === "42501" || msg.includes("row-level security")) return "No tienes permiso para realizar esta acción en esta obra.";

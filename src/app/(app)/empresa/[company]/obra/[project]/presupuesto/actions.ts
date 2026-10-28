@@ -35,67 +35,22 @@ export async function updateMargin(companyCode: string, projectCode: string, wbs
 export type ImportRow = { code: string; name: string; parent: string | null; level: number; phase: string | null; costCenter: string | null; costType: string | null; budget: number; margin: number };
 
 /**
- * Importación del presupuesto aprobado. Si la obra no tiene comprobantes se reemplaza la estructura;
- * si ya tiene movimientos, se agregan partidas nuevas y se versionan los cambios de monto.
+ * Importación del presupuesto aprobado, en una sola transacción de la base (import_budget): si algo falla
+ * no queda nada a medias. Si la obra no tiene movimientos se reemplaza la estructura; si ya los tiene, se agregan
+ * partidas nuevas y se versionan los cambios de monto. No se subdivide una partida que ya tiene gastos u órdenes.
  */
 export async function importBudget(companyCode: string, projectCode: string, rows: ImportRow[]): Promise<ActionResult<{ created: number; updated: number; replaced: boolean }>> {
-  const ctx = await getProjectContext(companyCode, projectCode);
-  if (!can(ctx.role, "importBudget")) return { ok: false, error: "Solo Gerencia puede importar presupuestos." };
-  if (ctx.project.status === "cerrada") return { ok: false, error: "La obra está cerrada (solo lectura)." };
-  const sb = await supabaseServer();
-  const pid = ctx.project.id;
-  const [{ data: phases }, { data: existing }, { count }] = await Promise.all([
-    sb.from("phases").select("id, code").eq("project_id", pid),
-    sb.from("wbs_nodes").select("id, code, budget, is_leaf").eq("project_id", pid),
-    sb.from("expenses").select("id", { count: "exact", head: true }).eq("project_id", pid),
-  ]);
-  const { count: orders } = await sb.from("orders").select("id", { count: "exact", head: true }).eq("project_id", pid);
-  const phaseId = new Map((phases ?? []).map((f) => [f.code.toUpperCase(), f.id]));
-  // Fases nuevas que vienen en el Excel
-  const missing = [...new Set(rows.map((r) => r.phase?.toUpperCase()).filter((c): c is string => !!c && !phaseId.has(c)))];
-  if (missing.length) {
-    const { data: created, error } = await sb.from("phases").insert(missing.map((c, i) => ({ project_id: pid, code: c, name: `Fase ${c.replace(/\D/g, "") || c}`, sort: (phases?.length ?? 0) + i + 1 }))).select("id, code");
+  try {
+    const ctx = await getProjectContext(companyCode, projectCode);
+    if (!can(ctx.role, "importBudget")) return { ok: false, error: "Solo Gerencia puede importar presupuestos." };
+    if (ctx.project.status === "cerrada") return { ok: false, error: "La obra está cerrada (solo lectura)." };
+    const sb = await supabaseServer();
+    const { data, error } = await sb.rpc("import_budget", { p_project: ctx.project.id, p_rows: rows });
     if (error) return { ok: false, error: friendlyError(error) };
-    created?.forEach((f) => phaseId.set(f.code.toUpperCase(), f.id));
+    const r = data as { created: number; updated: number; replaced: boolean };
+    revalidatePath(`/empresa/${companyCode}/obra/${projectCode}`, "layout");
+    return { ok: true, data: r, message: r.replaced ? "Presupuesto importado" : "Presupuesto actualizado" };
+  } catch (e) {
+    return { ok: false, error: friendlyError(e) };
   }
-
-  const replace = !count && !orders;
-  const ids = new Map<string, string>();
-  let created = 0, updated = 0;
-  if (replace && existing?.length) {
-    const { error } = await sb.from("wbs_nodes").delete().eq("project_id", pid);
-    if (error) return { ok: false, error: friendlyError(error) };
-  } else existing?.forEach((e) => ids.set(e.code, e.id));
-
-  const ordered = [...rows].sort((a, b) => a.level - b.level);
-  let sort = replace ? 0 : existing?.length ?? 0;
-  for (const level of [1, 2, 3]) {
-    const batch = ordered.filter((r) => r.level === level && (replace || !ids.has(r.code)));
-    if (!batch.length) continue;
-    const payload = batch.map((r) => ({
-      project_id: pid, code: r.code, name: r.name, level: r.level, parent_id: r.parent ? ids.get(r.parent) ?? null : null,
-      phase_id: r.phase ? phaseId.get(r.phase.toUpperCase()) ?? null : null, cost_center: r.costCenter, cost_type: r.costType,
-      budget: rows.some((x) => x.parent === r.code) ? 0 : r.budget, margin: r.margin, sort: ++sort,
-    }));
-    const { data, error } = await sb.from("wbs_nodes").insert(payload).select("id, code, budget, is_leaf");
-    if (error) return { ok: false, error: friendlyError(error) };
-    data?.forEach((d) => ids.set(d.code, d.id));
-    created += data?.length ?? 0;
-    const logs = (data ?? []).filter((d) => Number(d.budget) > 0).map((d) => ({ project_id: pid, wbs_id: d.id, change_type: "importacion", amount: d.budget, previous_budget: 0, new_budget: d.budget, reason: "Importación del presupuesto aprobado (Excel)", created_by: ctx.user.id }));
-    if (logs.length) await sb.from("budget_changes").insert(logs);
-  }
-  if (!replace) {
-    for (const r of rows) {
-      const ex = existing?.find((e) => e.code === r.code);
-      if (!ex || !ex.is_leaf) continue;
-      const diff = Math.round((r.budget - Number(ex.budget)) * 100) / 100;
-      if (Math.abs(diff) < 0.01) continue;
-      const { error } = await sb.rpc("apply_budget_change", { p_wbs: ex.id, p_type: diff > 0 ? "adicional" : "deductivo", p_amount: diff, p_reason: "Actualización por importación de presupuesto (Excel)" });
-      if (error) return { ok: false, error: `${r.code}: ${friendlyError(error)}` };
-      updated++;
-    }
-  }
-  await sb.rpc("refresh_project_alerts", { p_project: pid });
-  revalidatePath(`/empresa/${companyCode}/obra/${projectCode}`, "layout");
-  return { ok: true, data: { created, updated, replaced: replace }, message: replace ? "Presupuesto importado" : "Presupuesto actualizado" };
 }

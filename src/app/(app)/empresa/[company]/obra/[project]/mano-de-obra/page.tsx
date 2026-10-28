@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getPhases } from "@/lib/queries";
 import { getProjectContext } from "@/lib/session";
 import { supabaseServer } from "@/lib/supabase/server";
 import { toNum } from "@/lib/format";
 import { LaborView, type LaborPayroll } from "./_components/labor-view";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Mano de obra" };
 
@@ -15,6 +16,7 @@ export default async function ManoDeObraPage({ params, searchParams }: {
   const { company, project } = await params;
   const sp = await searchParams;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "labor")) return <NoAccess role={ctx.role} area="labor" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const sb = await supabaseServer();
   const pid = ctx.project.id;
 

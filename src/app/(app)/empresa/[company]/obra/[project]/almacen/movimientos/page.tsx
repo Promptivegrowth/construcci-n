@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { can } from "@/lib/permissions";
+import { can, canView } from "@/lib/permissions";
 import { getProjectContext } from "@/lib/session";
 import { signedUrls } from "@/lib/storage";
 import { loadWarehouse, stockSummary } from "../_lib/data";
 import { MovementsView } from "./_components/movements-view";
+import { NoAccess } from "@/components/ui/no-access";
 
 export const metadata: Metadata = { title: "Ingresos y salidas de almacén" };
 
@@ -16,6 +17,7 @@ export default async function MovimientosPage({ params, searchParams }: {
   const { company, project } = await params;
   const sp = await searchParams;
   const ctx = await getProjectContext(company, project);
+  if (!canView(ctx.role, "warehouse")) return <NoAccess role={ctx.role} area="warehouse" back={`/empresa/${company}/obra/${project}`} backLabel="Volver a la obra" />;
   const data = await loadWarehouse(ctx.company.id, ctx.project.id);
   const stock = stockSummary(data.materials, data.movements);
 
